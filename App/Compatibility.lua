@@ -14,14 +14,16 @@ if interface >= 16000 and interface < 20000 then Compat.client = "Forever"
 elseif interface >= 100000 then Compat.client = "Retail"
 elseif interface >= 20000 and interface < 30000 then Compat.client = "TBC Classic / Anniversary"
 elseif interface >= 10000 and interface < 16000 then Compat.client = "Classic Era"
+elseif interface >= 50000 and interface < 60000 then Compat.client = "Mists of Pandaria Classic"
 elseif interface >= 30000 then Compat.client = "Progression Classic"
 else Compat.client = "Unknown" end
 
 -- Shared vocabulary is extended by the selected client dataset.
--- Progression Classic retains the Forever fallback until a dedicated pack exists.
+-- Other progression clients retain the Forever fallback until dedicated packs exist.
 local vocabularyByClient = {
 	Retail = "Retail", Forever = "Forever", ["Classic Era"] = "ClassicEra",
 	["TBC Classic / Anniversary"] = "AnniversaryTBC", ["Progression Classic"] = "Forever",
+	["Mists of Pandaria Classic"] = "MoPClassic",
 }
 Compat.vocabulary = vocabularyByClient[Compat.client] or "Retail"
 

@@ -21,6 +21,7 @@ Data\WowVocabulary.lua
 Data\WowVocabularyForever.lua
 Data\WowVocabularyClassicEra.lua
 Data\WowVocabularyTBC.lua
+Data\WowVocabularyMoP.lua
 Data\Hyphenated.lua
 Spelling\Languages.lua
 Spelling\Unicode.lua

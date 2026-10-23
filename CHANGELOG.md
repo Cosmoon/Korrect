@@ -12,4 +12,4 @@ First public release of Korrect.
 - Personal dictionary, session ignores, and custom replacement suggestions.
 - Configurable chat channels, colors, correction-panel size, and minimap button.
 - Native Tab/Enter behavior and item links preserved; no automatic replacement or sending.
-- Client compatibility handling for Retail, Forever, Era, TBC Anniversary, and progression Classic.
+- Client compatibility handling for Retail, Forever, Era, TBC Anniversary, Mists of Pandaria Classic.

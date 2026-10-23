@@ -25,7 +25,7 @@ Choose up to two spelling languages at the same time:
 - Italian
 - Dutch (Netherlands and Belgium)
 
-Layered WoW dictionaries recognize locations, bosses, spells, items, classes, professions, and community shorthand. Korrect automatically selects the vocabulary for Retail, Forever, Classic Era, or TBC Anniversary.
+Layered WoW dictionaries recognize locations, bosses, spells, items, classes, professions, and community shorthand. Korrect automatically selects the vocabulary for Retail, Forever, Classic Era, TBC Anniversary, or Mists of Pandaria Classic.
 
 The game dictionaries are curated lists, not complete game databases. Localized names and translations may be incomplete.
 

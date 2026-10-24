@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.1 — 2026-10-23
+
+- Added dedicated Mists of Pandaria Classic vocabulary
+
 ## 1.0.0 — 2026-10-23
 
 First public release of Korrect.

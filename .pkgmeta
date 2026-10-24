@@ -1,0 +1,17 @@
+package-as: Korrect
+enable-nolib-creation: no
+
+manual-changelog:
+  filename: CHANGELOG.md
+  markup-type: markdown
+
+ignore:
+  - tools
+  - tests
+  - DEVELOPMENT.md
+  - AGENTS.md
+  - Data/DictionarySources
+  - Data/Source
+  - Data/ValidatedLanguages
+  - Data/LanguageSources.json
+  - __pycache__

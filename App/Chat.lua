@@ -8,7 +8,7 @@ ns.Chat = Chat
 local state = { hooked = {}, ignored = {}, cache = {}, cacheOrder = {} }
 
 local function channelEnabled(box)
-	local channel = box:GetAttribute("chatType") or "SAY"
+	local channel = ns.Compat:GetChatType(box)
 	if channel == "PARTY_LEADER" then channel = "PARTY"
 	elseif channel == "RAID_LEADER" or channel == "RAID_WARNING" then channel = "RAID"
 	elseif channel == "INSTANCE_CHAT_LEADER" then channel = "INSTANCE_CHAT"
@@ -33,6 +33,7 @@ function ns.OpenSettings()
 	ns.Autofill:Cancel()
 	UI.panel:Hide()
 	state.job = nil
+	UI:RaiseAboveChat(UI.options, state.box)
 	UI.options:Show(); UI.options:Raise()
 end
 
@@ -160,6 +161,11 @@ function Chat:IsOpen()
 end
 
 local function activateBox(box)
+	if state.box ~= box then
+		ns.Autofill:Cancel()
+		UI:ClearMarks()
+		UI.panel:Hide()
+	end
 	state.box, state.pendingAt = box, GetTime() + 0.1
 	state.job, state.selected = nil, nil
 	rememberNames()
@@ -197,6 +203,9 @@ local function wireBox(box)
 		ns.Autofill:Schedule(self)
 	end)
 	box:HookScript("OnShow", activateBox)
+	box:HookScript("OnEditFocusGained", function(self)
+		if state.box ~= self then activateBox(self) end
+	end)
 	box:HookScript("OnHide", function(self)
 		if ns.Autofill.box == self then ns.Autofill:Cancel() end
 		if state.box == self then
@@ -315,6 +324,9 @@ function Chat:Initialize()
 end
 
 function Chat:HandleEvent(event)
+	if event == "ADDON_LOADED" or event == "PLAYER_LOGIN" then
+		ns.Compat:HookWIM(wireBox)
+	end
 	if event == "GLOBAL_MOUSE_DOWN" and UI.completion:IsShown() and not UI.completion:IsMouseOver() then ns.Autofill:Cancel() end
 	if event == "GLOBAL_MOUSE_DOWN" and UI.panel:IsShown()
 		and not UI.panel:IsMouseOver() and (not state.box or not state.box:IsMouseOver()) then

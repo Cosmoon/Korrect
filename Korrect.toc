@@ -2,7 +2,7 @@
 ## Title: Korrect
 ## Notes: Local chat spelling checks, useful corrections, and a personal dictionary.
 ## Author: Cosmoon
-## Version: 1.0.0
+## Version: 1.0.2
 ## IconTexture: Interface\AddOns\Korrect\Assets\KorrectLogo.tga
 ## SavedVariables: KorrectDB
 

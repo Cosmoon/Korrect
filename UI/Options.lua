@@ -98,7 +98,7 @@ local function buildOptions(parent)
 	local channelNames = {
 		{"SAY", "Say"}, {"YELL", "Yell"}, {"WHISPER", "Whispers"}, {"GUILD", "Guild"},
 		{"OFFICER", "Officer"}, {"PARTY", "Party"}, {"RAID", "Raid"},
-		{"INSTANCE_CHAT", "Battleground / instance"}, {"CHANNEL", "General, Trade, and other channels"},
+		{"INSTANCE_CHAT", "Battleground / instance"}, {"CHANNEL", "General, Trade, World, custom, and community"},
 		{"EMOTE", "Emotes"},
 	}
 	for i, entry in ipairs(channelNames) do

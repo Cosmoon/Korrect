@@ -36,6 +36,7 @@ end
 
 function UI:OpenSuggestions(editBox, issue)
 	local panel = self.panel
+	self:RaiseAboveChat(panel, editBox)
 	panel:ClearAllPoints()
 	panel:SetPoint("BOTTOMLEFT", editBox, "TOPLEFT", 0, 8)
 	panel:SetScale(ns.db.panelScale)

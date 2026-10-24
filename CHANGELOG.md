@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.2 — 2026-10-24
+
+- Added spellchecking, corrections, and word completion in WIM message windows.
+- Supports WIM whispers (including Battle.net), Guild, Officer, Party, Raid, Battleground, Say, World, custom channels, and Community chat.
+- Correction, completion, and settings windows now open above WIM windows, including raised tabs and custom screen layers.
+- CurseForge packages use the curated changelog instead of Git history and author email addresses.
+
 ## 1.0.1 — 2026-10-23
 
 - Added dedicated Mists of Pandaria Classic vocabulary

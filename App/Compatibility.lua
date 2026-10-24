@@ -27,6 +27,41 @@ local vocabularyByClient = {
 }
 Compat.vocabulary = vocabularyByClient[Compat.client] or "Retail"
 
+local wimChannels = {
+	guild = "GUILD", officer = "OFFICER", party = "PARTY", raid = "RAID",
+	battleground = "INSTANCE_CHAT", say = "SAY", channel = "CHANNEL", community = "CHANNEL",
+}
+
+function Compat:GetChatType(box)
+	local window = box.widgetName == "msg_box" and box.parentWindow
+	if window and (window.type == "whisper" or window.type == "w2w") then
+		return window.isBN and "BN_WHISPER" or "WHISPER"
+	elseif window and window.type == "chat" then
+		return wimChannels[window.chatType] or "WIM_UNKNOWN"
+	end
+	return box:GetAttribute("chatType") or "SAY"
+end
+
+function Compat:HookWIM(wireBox)
+	local wim = _G.WIM
+	if not wim or type(wim.RegisterWidgetTrigger) ~= "function" then return end
+	if self.wim ~= wim then
+		self.wim = wim
+		-- WIM's public triggers cover newly created and recycled pop-ups.
+		wim.RegisterWidgetTrigger("msg_box", "whisper,chat,w2w", "OnShow", wireBox)
+		wim.RegisterWidgetTrigger("msg_box", "whisper,chat,w2w", "OnEditFocusGained", wireBox)
+	end
+	if type(wim.GetWindowSoupBowl) == "function" then
+		local pool = wim.GetWindowSoupBowl()
+		for _, entry in ipairs(pool and pool.windows or {}) do
+			local window = entry.obj
+			if window and (window.type == "whisper" or window.type == "chat" or window.type == "w2w") then
+				wireBox(window.widgets and window.widgets.msg_box)
+			end
+		end
+	end
+end
+
 function Compat:VisitChatBoxes(visit)
 	visit(_G.ChatFrameEditBox)
 	for i = 1, NUM_CHAT_WINDOWS or 10 do
@@ -46,6 +81,7 @@ function Compat:VisitChatBoxes(visit)
 end
 
 function Compat:HookChat(wireBox, wireAllBoxes)
+	self:HookWIM(wireBox)
 	-- Hook both if a client exposes both entry points; wireBox is idempotent.
 	if ChatFrameUtil and type(ChatFrameUtil.ActivateChat) == "function" then
 		hooksecurefunc(ChatFrameUtil, "ActivateChat", wireBox)

@@ -21,6 +21,7 @@ end
 function UI:ShowCompletions(box, results)
 	self.panel:Hide()
 	local panel = self.completion
+	self:RaiseAboveChat(panel, box)
 	panel:ClearAllPoints(); panel:SetPoint("BOTTOMLEFT", box, "TOPLEFT", 0, 8)
 	panel:SetScale(ns.db.panelScale); panel:SetHeight(34 + #results*26)
 	for i,b in ipairs(panel.buttons) do

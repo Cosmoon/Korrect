@@ -30,7 +30,6 @@ driver:SetScript("OnEvent", function(_, event, name)
 		ns.Chat:Initialize()
 		ns.Session:Initialize()
 		ns.RegisterCommands()
-		driver:UnregisterEvent("ADDON_LOADED")
 	elseif ns.db then
 		ns.Chat:HandleEvent(event)
 		if event == "PLAYER_LOGIN" then driver:UnregisterEvent(event) end

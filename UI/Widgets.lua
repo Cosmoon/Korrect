@@ -4,6 +4,24 @@ ns.UI = UI
 UI.ACCENT = { 0.32, 0.78, 0.72 }
 UI.ICON = "Interface\\AddOns\\Korrect\\Assets\\KorrectLogo.tga"
 
+local strata = { "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP" }
+local strataRank = {}
+for rank, name in ipairs(strata) do strataRank[name] = rank end
+
+function UI:RaiseAboveChat(panel, box)
+	local rank, level = 0, 0
+	local frame = box
+	-- WIM can raise tab containers and use a user-selected strata. Include
+	-- ancestors so the popup also clears a raised tab strip or chat window.
+	while frame do
+		rank = math.max(rank, strataRank[frame:GetFrameStrata()] or 0)
+		level = math.max(level, frame:GetFrameLevel())
+		frame = frame:GetParent()
+	end
+	panel:SetFrameStrata(strata[math.max(5, math.min(#strata, rank + 1))])
+	panel:SetFrameLevel(level + 10)
+end
+
 -- Shared controls used by the options window and correction panel.
 local function label(parent, text, x, y, template)
 	local value = parent:CreateFontString(nil, "OVERLAY", template or "GameFontHighlight")

@@ -73,6 +73,7 @@ Open `/korrect`, click the minimap button, or find Korrect in the game’s AddOn
 | `/korrect add word` | Add a personal word |
 | `/korrect debug` | Show client and vocabulary information |
 
-Built for standard Blizzard chat boxes. Spelling checks and word suggestions run locally using bundled dictionaries, no external service or separate dictionary addon is required.
+Supports standard Blizzard chat boxes and WoW Instant Messenger (WIM) message windows: whispers (including Battle.net), Guild, Officer, Party, Raid, Battleground, Say, World, custom channels, and Community chat. Each uses the matching Korrect channel setting; World, custom channels, and Community chat share the General/Trade/other channels setting. Spelling checks and word suggestions run locally using bundled dictionaries, no external service or separate dictionary addon is required.
 
-Korrect checks spelling, not grammar. Third-party chat-input replacements are not currently supported.
+Korrect checks spelling, not grammar. Other third-party chat-input replacements are not currently supported.
+But can confirm it's working with WoW Instant Messenger and Chattynator.

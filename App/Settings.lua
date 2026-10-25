@@ -3,6 +3,7 @@ local Engine, UI = ns.Engine, ns.UI
 
 local defaults = {
 	enabled = true, showHighlights = true, wowVocabulary = true, ignoreUppercase = true,
+	whisperMessengerHighlights = true,
 	showMinimap = true, minimapAngle = 220, maxSuggestions = 6, panelScale = 1,
 	autofill = true, rememberNames = true, replacements = {},
 	languages = { enUS = true, enGB = false, deDE = false, frFR = false, esES = false, itIT = false, nlNL = false, nlBE = false },

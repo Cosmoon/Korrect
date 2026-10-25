@@ -75,5 +75,49 @@ Open `/korrect`, click the minimap button, or find Korrect in the game’s AddOn
 
 Supports standard Blizzard chat boxes and WoW Instant Messenger (WIM) message windows: whispers (including Battle.net), Guild, Officer, Party, Raid, Battleground, Say, World, custom channels, and Community chat. Each uses the matching Korrect channel setting; World, custom channels, and Community chat share the General/Trade/other channels setting. Spelling checks and word suggestions run locally using bundled dictionaries, no external service or separate dictionary addon is required.
 
-Korrect checks spelling, not grammar. Other third-party chat-input replacements are not currently supported.
+Korrect checks spelling, not grammar. Support for other chat-input replacements depends on the addon.
 But can confirm it's working with WoW Instant Messenger and Chattynator.
+
+## Other chat addons
+
+WIM, WhisperMessenger, and Cellular are supported automatically. Cellular reuses
+the Blizzard chat input, including when it is moved into a Cellular window.
+Character and Battle.net whispers follow Korrect's **Whispers** setting and the
+normal color option in **General**. Corrections and word completion work in both
+window and tab layouts; Cellular's history-copy field is left untouched.
+
+WhisperMessenger supports word completion and right-click corrections without changing its
+addon files. Colored misspelling highlights are enabled by default. To keep its
+input plain, turn off **Color spelling mistakes in WhisperMessenger** under
+`/korrect` > **Typing**. WhisperMessenger may retain highlight colors in saved
+drafts when this option is enabled. The global color option in **General** must
+also be enabled for colors to appear. The current channel is
+read from the selected contact row. If search or paging removes that row,
+checks pause until the selected row is available again.
+
+Other addons can opt in through the `Korrect` global API once Korrect has loaded
+(check `ADDON_LOADED` if needed):
+
+```lua
+if Korrect and Korrect.RegisterChatBox then
+    Korrect.RegisterChatBox(input, {
+        chatType = function() return selectedContact.channel end,
+    })
+end
+```
+
+Use a channel string such as `"WHISPER"`, or a function returning the current
+WoW channel when the input is shared between conversations. A missing channel
+disables checks. Registration is idempotent and preserves existing scripts.
+It also works before Korrect finishes initializing its chat hooks.
+
+Registered inputs keep plain text by default, so draft saving, character limits
+and send buttons receive no Korrect color tags. Right-click a word for
+corrections; word completion remains available. Search and note inputs are
+never automatically registered.
+
+An integration may opt into `highlights = true` only if it controls every text
+consumer: read drafts/messages with `Korrect.GetRawText(input)` (text and byte
+cursor), and call `Korrect.PrepareChatBox(input)` before send handlers, draft
+snapshots or conversation changes. Script hooks alone cannot guarantee cleanup
+before another addon's handlers run.

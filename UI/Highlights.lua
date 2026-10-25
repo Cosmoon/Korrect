@@ -76,7 +76,7 @@ function UI:ShowMarks(box, issues)
 	local maxBytes = box.GetMaxBytes and box:GetMaxBytes() or 0
 	for _, issue in ipairs(issues) do
 		result[#result+1] = raw:sub(from, issue.first-1)
-		local highlighted = ns.db.showHighlights and ns.db.enabled
+		local highlighted = ns.db.showHighlights and ns.db.enabled and ns.Compat:CanHighlight(box)
 			and (maxBytes == 0 or #raw + extra + 12 <= maxBytes)
 		if highlighted then
 			result[#result+1] = prefix .. issue.word .. "|r"

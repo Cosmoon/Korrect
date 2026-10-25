@@ -161,6 +161,8 @@ local function buildOptions(parent)
 	forget:SetPoint("TOPLEFT", 20, -222)
 	local source = label(typing, "WoW vocabulary: " .. ns.Compat.vocabulary .. " + shared terms", 20, -275, "GameFontHighlightSmall")
 	source:SetWidth(470)
+	label(typing, "WHISPERMESSENGER", 20, -320, "GameFontNormal")
+	option(typing, "whisperMessengerHighlights", "Color spelling mistakes in WhisperMessenger", "Enabled by default. Also requires Color possible spelling mistakes in General. WhisperMessenger may retain these colors in saved drafts. Disable this to keep its input plain while keeping corrections and word completion.", 16, -345)
 
 	local replacements = pages[6]
 	label(replacements, "PERSONAL REPLACEMENTS", 20, -2, "GameFontNormal")
@@ -191,7 +193,7 @@ local function buildOptions(parent)
 	local reset = button(parent, "Reset options", 125, 24, function() ns.ResetOptions() end)
 	reset:SetPoint("BOTTOMLEFT", 20, 18)
 	tip(reset, "Reset options", "Restores display and channel settings. Keeps your personal dictionary and replacements.")
-	local footer = label(parent, "1.0.0 - completion and client dictionaries", 175, -563, "GameFontDisableSmall")
+	local footer = label(parent, "1.0.3 - chat addon support", 175, -563, "GameFontDisableSmall")
 	parent.Refresh = function(self)
 		for _, control in ipairs(self.controls) do control:Refresh() end
 		local list = {}

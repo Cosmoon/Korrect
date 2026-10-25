@@ -173,6 +173,16 @@ local function activateBox(box)
 	ns.WakeChat()
 end
 
+function Chat:FinishInput(box)
+	ns.Autofill:Cancel()
+	if state.box == box then
+		state.job, state.selected, state.pendingAt = nil, nil, nil
+		state.clickBox, state.clickButton, state.clickAt = nil, nil, nil
+		UI.panel:Hide()
+	end
+	UI:ClearMarks(box)
+end
+
 local function wireBox(box)
 	if not box or state.hooked[box] then return end
 	state.hooked[box] = true
@@ -180,11 +190,7 @@ local function wireBox(box)
 	-- Never replace Blizzard's Enter or send functions: their execution must
 	-- remain secure when chat is restricted in combat, dungeons, or raids.
 	local function finishInput(self)
-		ns.Autofill:Cancel()
-		state.job, state.selected, state.pendingAt = nil, nil, nil
-		state.clickBox, state.clickButton, state.clickAt = nil, nil, nil
-		UI.panel:Hide()
-		UI:ClearMarks(self)
+		Chat:FinishInput(self)
 	end
 	box:HookScript("OnKeyDown", function(self, key)
 		if key == "ESCAPE" or key == "TAB" or key == "LEFT" or key == "RIGHT" or key == "HOME" or key == "END" or key == "UP" or key == "DOWN" then ns.Autofill:Cancel() end
@@ -326,13 +332,14 @@ end
 function Chat:HandleEvent(event)
 	if event == "ADDON_LOADED" or event == "PLAYER_LOGIN" then
 		ns.Compat:HookWIM(wireBox)
+		ns.Compat:HookWhisperMessenger()
 	end
 	if event == "GLOBAL_MOUSE_DOWN" and UI.completion:IsShown() and not UI.completion:IsMouseOver() then ns.Autofill:Cancel() end
 	if event == "GLOBAL_MOUSE_DOWN" and UI.panel:IsShown()
 		and not UI.panel:IsMouseOver() and (not state.box or not state.box:IsMouseOver()) then
 		ns.DismissPanel()
 	end
-	if event == "PLAYER_LOGIN" or event == "UPDATE_CHAT_WINDOWS" then wireAllBoxes() end
+	if event == "ADDON_LOADED" or event == "PLAYER_LOGIN" or event == "UPDATE_CHAT_WINDOWS" then wireAllBoxes() end
 	if self:IsOpen() and (event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_TARGET_CHANGED") then rememberNames() end
 end
 

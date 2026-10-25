@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.3 — 2026-10-25
+
+- Added automatic WhisperMessenger support for spelling corrections and word completion, with channel settings following the selected conversation.
+- Added WhisperMessenger spelling colors, enabled by default and configurable under Typing. Colors may be retained in saved drafts; disable this option to keep its input plain.
+- Added Cellular support for character and Battle.net whispers, including its relocated Blizzard input, word completion, and clean Enter/numpad Enter sending.
+- Added a registration API for other chat addons to connect their input fields to Korrect.
+- Improved discovery of default chat inputs and inputs available after another addon loads.
+- WhisperMessenger checks pause when search or paging hides the selected contact row, until its channel can be identified again.
+
 ## 1.0.2 — 2026-10-24
 
 - Added spellchecking, corrections, and word completion in WIM message windows.

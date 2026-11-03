@@ -1,0 +1,12 @@
+## Interface: 120105, 16001, 11509, 20506, 50504
+## Title: Korrect - English (UK)
+## Notes: English (UK) dictionary for Korrect. Loaded only when you enable it in /korrect.
+## Author: Cosmoon
+## Version: 1.0.4
+## Dependencies: Korrect
+## LoadOnDemand: 1
+## Group: Korrect
+## IconTexture: Interface\AddOns\Korrect\Assets\KorrectLogo.tga
+
+enGB.lua
+Register.lua

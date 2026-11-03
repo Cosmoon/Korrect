@@ -15,3 +15,13 @@ ignore:
   - Data/ValidatedLanguages
   - Data/LanguageSources.json
   - __pycache__
+
+# Optional dictionaries are LoadOnDemand addons stored as repository
+# subfolders; the packager places them next to Korrect.
+move-folders:
+  Korrect/Korrect_enGB: Korrect_enGB
+  Korrect/Korrect_deDE: Korrect_deDE
+  Korrect/Korrect_frFR: Korrect_frFR
+  Korrect/Korrect_esES: Korrect_esES
+  Korrect/Korrect_itIT: Korrect_itIT
+  Korrect/Korrect_nlNL: Korrect_nlNL

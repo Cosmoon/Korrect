@@ -11,6 +11,11 @@ Engine.Normalize = normalize
 -- Remove only the private color prefixes used by this addon's edit-box
 -- highlights, translating a byte cursor back into the original text.
 function Engine.StripHighlights(text, prefixes, cursor)
+	-- Fast path: without any escape sequence there is nothing to strip.
+	if not text:find("|", 1, true) then
+		cursor = cursor or #text
+		return text, cursor < #text and cursor or #text
+	end
 	local parts, i, length, depth = {}, 1, 0, 0
 	local plainCursor = 0
 	cursor = cursor or #text
@@ -87,7 +92,8 @@ function Engine:Check(text, options, ignored)
 	local knownNames = options.rememberNames ~= false and ns.Session and ns.MatchWowVocabulary(ns.Session, text, tokens) or {}
 	for i, token in ipairs(tokens) do
 		local word = normalize(token.word)
-		if not accepted[i] and not knownNames[i] and U.Length(word) >= options.minLength and U.Length(word) <= 28 and U.IsWord(word)
+		local size = U.Length(word)
+		if not accepted[i] and not knownNames[i] and size >= options.minLength and size <= 28 and U.IsWord(word)
 			and not (ignored and ignored[word])
 			and not (options.ignoreUppercase and U.IsUpper(token.word))
 			and not self:Contains(word, options.wowVocabulary) then
@@ -110,29 +116,38 @@ function Engine.Distance(source, target, limit)
 	if math.abs(n - m) > limit then return limit + 1 end
 	if n == 0 then return m end
 	if m == 0 then return n end
+	local big = limit + 1
 	local previous, beforePrevious, current = {}, {}, {}
 	for j = 0, m do previous[j] = j end
 	for i = 1, n do
-		for j in pairs(current) do current[j] = nil end
-		current[0] = i
 		local from, to = math.max(1, i - limit), math.min(m, i + limit)
-		local rowMin = limit + 1
+		-- Only the band edges need resetting; cells outside the band are never read.
+		local left = from == 1 and i or big
+		current[from - 1] = left
+		local a = sourceChars and sourceChars[i] or source:byte(i)
+		local aPrev = i > 1 and (sourceChars and sourceChars[i - 1] or source:byte(i - 1)) or nil
+		local bPrev = from > 1 and (targetChars and targetChars[from - 1] or target:byte(from - 1)) or nil
+		local rowMin = big
 		for j = from, to do
-			local a = sourceChars and sourceChars[i] or source:byte(i)
 			local b = targetChars and targetChars[j] or target:byte(j)
-			local cost = a == b and 0 or 1
-			local value = math.min((previous[j] or limit + 1) + 1,
-				(current[j - 1] or limit + 1) + 1, (previous[j - 1] or limit + 1) + cost)
-			if i > 1 and j > 1 and a == (targetChars and targetChars[j - 1] or target:byte(j - 1))
-				and (sourceChars and sourceChars[i - 1] or source:byte(i - 1)) == b then
-				value = math.min(value, (beforePrevious[j - 2] or limit + 1) + 1)
+			local value = (previous[j] or big) + 1
+			local other = left + 1
+			if other < value then value = other end
+			other = (previous[j - 1] or big) + (a == b and 0 or 1)
+			if other < value then value = other end
+			if aPrev and bPrev and a == bPrev and aPrev == b then
+				other = (beforePrevious[j - 2] or big) + 1
+				if other < value then value = other end
 			end
-			current[j], rowMin = value, math.min(rowMin, value)
+			current[j] = value
+			if value < rowMin then rowMin = value end
+			left, bPrev = value, b
 		end
-		if rowMin > limit then return limit + 1 end
+		current[to + 1] = big
+		if rowMin > limit then return big end
 		beforePrevious, previous, current = previous, current, beforePrevious
 	end
-	return previous[m] or limit + 1
+	return previous[m] or big
 end
 
 local keyboard = {
@@ -191,6 +206,11 @@ function Engine:Suggest(word, options, yieldWork)
 		if prefix and not self:Elision(prefix, split or candidate, true) then return end
 		if seen[candidate] or candidate == word then return end
 		local ascii = not candidate:find("[\128-\255]")
+		if not forced and not knownDistance then
+			-- Cheap length bound before splitting characters or running the matrix.
+			local size = ascii and #candidate or U.Length(candidate)
+			if size < length - limit or size > length + limit then return end
+		end
 		local candidateChars = ascii and candidate or U.Characters(candidate)
 		-- Wider matches must retain both endpoints. The tier is based on the
 		-- typed word's length, not the length of a proposed correction.

@@ -2,18 +2,12 @@
 ## Title: Korrect
 ## Notes: Local chat spelling checks, useful corrections, and a personal dictionary.
 ## Author: Cosmoon
-## Version: 1.0.3
+## Version: 1.0.4
 ## IconTexture: Interface\AddOns\Korrect\Assets\KorrectLogo.tga
 ## SavedVariables: KorrectDB
 
 App\Compatibility.lua
 Data\English.lua
-Data\enGB.lua
-Data\deDE.lua
-Data\frFR.lua
-Data\esES.lua
-Data\itIT.lua
-Data\nlNL.lua
 Data\Vocabulary.lua
 Data\WowVocabularyShared.lua
 Data\WowVocabularyClassicShared.lua

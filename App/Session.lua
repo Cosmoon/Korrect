@@ -1,6 +1,6 @@
 local _, ns = ...
 local E = ns.Engine
-local Session = {terms={}, count=0, wowPhrases={}}
+local Session = {terms={}, count=0, wowPhrases={}, raw={}, pending={}}
 ns.Session = Session
 local function safe(value) return not (issecretvalue and issecretvalue(value)) end
 local function count(value, maximum)
@@ -9,10 +9,14 @@ end
 
 function Session:Add(name, player)
 	if not ns.db or not ns.db.rememberNames or not safe(name) or type(name) ~= "string" then return end
+	-- Roster scans repeat the same names constantly; skip them before normalizing.
+	if self.raw[name] or self.count >= 2000 then return end
+	local original = name
 	if player then name = name:match("^[^-]+") or "" end
 	if #name < 2 or #name > 120 or name:find("[|%c]") then return end
 	local key = E.Normalize(name)
-	if self.terms[key] or self.count >= 2000 then return end
+	self.raw[original] = true
+	if self.terms[key] then return end
 	self.terms[key], self.count = name, self.count + 1
 	E.names[key] = true
 	local tokens = E:Tokens(key)
@@ -26,7 +30,7 @@ function Session:Add(name, player)
 end
 
 function Session:Clear()
-	self.terms, self.count, self.wowPhrases = {}, 0, {}
+	self.terms, self.count, self.wowPhrases, self.raw = {}, 0, {}, {}
 	E.names = {}
 end
 
@@ -37,11 +41,15 @@ function Session:Units()
 	for i=1,40 do self:Add(UnitName("raid"..i), true) end
 end
 
-function Session:Social()
+function Session:Guild()
 	if not ns.db.rememberNames then return end
 	if GetNumGuildMembers and GetGuildRosterInfo then
 		for i=1,count(GetNumGuildMembers(), 1000) do self:Add(GetGuildRosterInfo(i), true) end
 	end
+end
+
+function Session:Friends()
+	if not ns.db.rememberNames then return end
 	if C_FriendList and C_FriendList.GetNumFriends and C_FriendList.GetFriendInfoByIndex then
 		for i=1,count(C_FriendList.GetNumFriends(), 500) do
 			local info = C_FriendList.GetFriendInfoByIndex(i)
@@ -50,6 +58,10 @@ function Session:Social()
 	elseif GetNumFriends and GetFriendInfo then
 		for i=1,count(GetNumFriends(), 500) do self:Add(GetFriendInfo(i), true) end
 	end
+end
+
+function Session:BattleNet()
+	if not ns.db.rememberNames then return end
 	if BNGetNumFriends and C_BattleNet and C_BattleNet.GetFriendAccountInfo then
 		for i=1,count(BNGetNumFriends(), 500) do
 			local info = C_BattleNet.GetFriendAccountInfo(i)
@@ -61,6 +73,27 @@ function Session:Social()
 	end
 end
 
+function Session:Social()
+	self:Guild(); self:Friends(); self:BattleNet()
+end
+
+-- Roster events can fire many times per second in large guilds. Collect them
+-- and rescan only the affected list once things settle.
+function Session:ScheduleScan(kind)
+	self.pending[kind] = true
+	if self.scanQueued then return end
+	if not (C_Timer and C_Timer.After) then self:FlushScans(); return end
+	self.scanQueued = true
+	C_Timer.After(2, function() self:FlushScans() end)
+end
+
+function Session:FlushScans()
+	self.scanQueued = false
+	local pending = self.pending
+	self.pending = {}
+	for kind in pairs(pending) do self[kind](self) end
+end
+
 function Session:Links(text)
 	if not ns.db.rememberNames or not safe(text) or type(text) ~= "string" then return end
 	for name in text:gmatch("|Hitem:[^|]*|h%[([^%]]+)%]|h") do self:Add(name) end
@@ -70,10 +103,13 @@ function Session:HandleEvent(event, message, sender)
 	if not ns.db.rememberNames then return end
 	if event:match("^CHAT_MSG_") then
 		self:Links(message); self:Add(sender, true)
-	elseif event == "GUILD_ROSTER_UPDATE" or event == "FRIENDLIST_UPDATE" or event == "BN_FRIEND_INFO_CHANGED" then
-		self:Social()
-	elseif event == "UPDATE_MOUSEOVER_UNIT" or event == "PLAYER_FOCUS_CHANGED"
-		or event == "PLAYER_TARGET_CHANGED" or event == "GROUP_ROSTER_UPDATE" then self:Units() end
+	elseif event == "GUILD_ROSTER_UPDATE" then self:ScheduleScan("Guild")
+	elseif event == "FRIENDLIST_UPDATE" then self:ScheduleScan("Friends")
+	elseif event == "BN_FRIEND_INFO_CHANGED" then self:ScheduleScan("BattleNet")
+	elseif event == "UPDATE_MOUSEOVER_UNIT" then self:Add(UnitName("mouseover"))
+	elseif event == "PLAYER_FOCUS_CHANGED" then self:Add(UnitName("focus"))
+	elseif event == "PLAYER_TARGET_CHANGED" then self:Add(UnitName("target"))
+	elseif event == "GROUP_ROSTER_UPDATE" then self:Units() end
 end
 
 function Session:Initialize()

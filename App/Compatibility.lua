@@ -162,7 +162,19 @@ function Compat:ScanWhisperMessenger(root)
 	end })
 end
 
+-- Only observe CreateFrame when Whisper Messenger is actually installed; the
+-- hook otherwise runs for every frame any addon or the UI ever creates.
+local function messengerInstalled()
+	local getInfo = (C_AddOns and C_AddOns.GetAddOnInfo) or GetAddOnInfo
+	if not getInfo then return true end
+	-- Folder name of Whisper Messenger. Disabled-but-installed still counts.
+	local ok, name = pcall(getInfo, "WhisperMessenger")
+	return ok and name ~= nil
+end
+
 function Compat:HookWhisperMessenger()
+	if self.messengerInstalled == nil then self.messengerInstalled = messengerInstalled() end
+	if not self.messengerInstalled and not _G.WhisperMessengerWindow then return end
 	if not self.messengerCreationHook then
 		self.messengerCreationHook = true
 		-- The window is built lazily, possibly long after ADDON_LOADED. A named

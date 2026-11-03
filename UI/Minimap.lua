@@ -36,6 +36,9 @@ end
 
 function UI:CreateMinimap()
 	local b = CreateFrame("Button", "KorrectMinimapButton", Minimap)
+	-- Assign the global from addon code. Button collectors such as MinimapButtonButton
+	-- skip names that issecurevariable reports as secure (Blizzard's own buttons).
+	_G.KorrectMinimapButton = b
 	b:SetSize(32, 32); b:SetFrameStrata("MEDIUM"); b:SetFrameLevel(Minimap:GetFrameLevel() + 10)
 	b:RegisterForClicks("LeftButtonUp", "RightButtonUp"); b:RegisterForDrag("LeftButton")
 	local icon = b:CreateTexture(nil, "ARTWORK")

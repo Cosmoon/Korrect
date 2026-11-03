@@ -39,7 +39,8 @@ function Dictionary:SetLanguages(languages)
 	languages = languages or { enUS = true }
 	local signature, selected = {}, {}
 	for _, entry in ipairs(ns.Languages) do
-		if languages[entry[1]] and #signature < ns.MaxLanguages then
+		-- Optional packs are loaded here on first use; skip any that are missing.
+		if languages[entry[1]] and #signature < ns.MaxLanguages and ns.LoadLanguagePack(entry[1]) then
 			signature[#signature + 1] = entry[1]; selected[entry[1]] = true
 		end
 	end
@@ -162,12 +163,14 @@ function Dictionary.VisitSimilar(self, chars, closeLimit, wideLimit, visit, yiel
 			local bytes = lead < 128 and 1 or (lead < 224 and 2 or (lead < 240 and 3 or 4))
 			local char = bucket[k]:sub(offset, offset + bytes - 1)
 			local nextOffset = offset + bytes
-			local edge = bucket[k]:sub(1, nextOffset - 1)
 			-- Find the end of this shared prefix without visiting its words.
+			-- UTF-8 never contains byte 255, so edge .. "\255" sorts after every
+			-- word starting with edge; no substring is built per comparison.
+			local upper = bucket[k]:sub(1, nextOffset - 1) .. "\255"
 			local low, high = k + 1, last + 1
 			while low < high do
 				local mid = math.floor((low + high) / 2)
-				if bucket[mid]:sub(1, nextOffset - 1) == edge then low = mid + 1 else high = mid end
+				if bucket[mid] < upper then low = mid + 1 else high = mid end
 			end
 			local branchEnd = low - 1
 			row[0] = depth

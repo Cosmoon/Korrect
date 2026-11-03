@@ -32,8 +32,14 @@ function ns.SetOption(key, value)
 	ns.OptionsChanged()
 end
 
+local function missingLanguage(code)
+	local addon = ns.LanguageAddOns[code] or ("Korrect_" .. code)
+	ns.PrintMessage("The " .. ns.LanguageTitle(code) .. " dictionary could not be loaded. Make sure the "
+		.. addon .. " addon is installed and enabled in the AddOns list.")
+end
+
 function ns.SetLanguage(code, enabled)
-	if not ns.LanguagePacks[code] then return end
+	if not ns.LanguagePacks[code] and not ns.LanguageAddOns[code] then return end
 	local count = 0
 	for _, entry in ipairs(ns.Languages) do
 		if ns.db.languages[entry[1]] then count = count + 1 end
@@ -41,6 +47,10 @@ function ns.SetLanguage(code, enabled)
 	if (not enabled and count <= 1 and ns.db.languages[code])
 		or (enabled and count >= ns.MaxLanguages and not ns.db.languages[code]) then
 		UI:RefreshOptions(); return
+	end
+	-- Loading can take a moment for large dictionaries; it happens once per session.
+	if enabled and not ns.LoadLanguagePack(code) then
+		missingLanguage(code); UI:RefreshOptions(); return
 	end
 	ns.db.languages[code] = enabled == true
 	ns.OptionsChanged()
@@ -127,6 +137,18 @@ function ns.InitializeSettings()
 			languageCount = languageCount + 1
 			if languageCount > ns.MaxLanguages then ns.db.languages[entry[1]] = false end
 		end
+	end
+	-- Drop saved languages whose dictionary addon is missing or disabled.
+	for _, entry in ipairs(ns.Languages) do
+		local code = entry[1]
+		if ns.db.languages[code] and not ns.LoadLanguagePack(code) then
+			ns.db.languages[code] = false
+			missingLanguage(code)
+		end
+	end
+	languageCount = 0
+	for _, entry in ipairs(ns.Languages) do
+		if ns.db.languages[entry[1]] then languageCount = languageCount + 1 end
 	end
 	if languageCount == 0 then ns.db.languages.enUS = true end
 end

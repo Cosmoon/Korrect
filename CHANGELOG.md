@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.4 — 2026-11-04
+
+- Language dictionaries are now separate addons (Korrect - Deutsch, Français, Español, Italiano, Nederlands, English (UK)) that load only when enabled. Korrect uses far less memory and loads faster at login.
+- Faster typing checks, word completion, and correction suggestions, especially with many remembered names.
+- Lighter name tracking in large guilds and friend lists; roster updates are now batched.
+- Less background overhead when Whisper Messenger is not installed.
+
 ## 1.0.3 — 2026-10-25
 
 - Added automatic WhisperMessenger support for spelling corrections and word completion, with channel settings following the selected conversation.

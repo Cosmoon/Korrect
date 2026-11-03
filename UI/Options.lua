@@ -90,7 +90,7 @@ local function buildOptions(parent)
 			if ns.db.languages[code] or count < ns.MaxLanguages then self:Enable() else self:Disable() end
 		end
 	end
-	local languageNote = label(languages, "Keep one or two languages enabled.\nTo switch when two are selected, turn one off first.\nNederlands (NL) and (BE) share the OpenTaal dictionary.", 20, -350, "GameFontHighlightSmall")
+	local languageNote = label(languages, "Keep one or two languages enabled.\nTo switch when two are selected, turn one off first.\nNederlands (NL) and (BE) share the OpenTaal dictionary.\nDictionaries load when enabled; /reload frees ones you turned off.", 20, -350, "GameFontHighlightSmall")
 	languageNote:SetWidth(470)
 
 	local channels = pages[2]

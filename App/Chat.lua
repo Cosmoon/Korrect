@@ -5,7 +5,8 @@ ns.Chat = Chat
 
 -- Chat state stays private: pending checks, suggestion jobs and their snapshots
 -- must be invalidated together when input or options change.
-local state = { hooked = {}, ignored = {}, cache = {}, cacheOrder = {} }
+local state = { hooked = {}, ignored = {}, cache = {}, cacheOrder = {},
+	mouseDown = setmetatable({}, { __mode = "k" }) }
 
 local function channelEnabled(box)
 	local channel = ns.Compat:GetChatType(box)
@@ -91,6 +92,11 @@ end
 function ns.ApplyCorrection(word)
 	ns.WakeChat()
 	if not selectionIsCurrent() then return end
+	if ns.Compat:ChatLocked() then
+		ns.DismissPanel()
+		ns.PrintMessage("Chat is locked during this encounter. Korrect can't change your text until it ends.")
+		return
+	end
 	local box = state.box
 	local value, cursor = Engine.Replace(UI:RawText(box), state.selected, word, select(2, UI:RawText(box)))
 	if not value then return end
@@ -134,6 +140,12 @@ local function check(box, force)
 	local previousJob = state.job
 	state.job, state.selected = nil, nil
 	if not box or not box:IsShown() or not ns.db.enabled or not channelEnabled(box) then
+		UI.panel:Hide(); UI:ClearMarks(box); return
+	end
+	-- Colored-text clients must not write to the input during lockdown.
+	-- Retail overlays never touch the input and keep checking.
+	if ns.Compat:ChatLocked() and not ns.Compat.overlayMarks then
+		state.box, state.snapshot, state.issues = box, UI:RawText(box), {}
 		UI.panel:Hide(); UI:ClearMarks(box); return
 	end
 	local text = UI:RawText(box)
@@ -229,13 +241,14 @@ local function wireBox(box)
 	box:HookScript("OnMouseDown", function(self)
 		ns.Autofill:Cancel()
 		local x, y = GetCursorPosition()
-		self.mfMouseDown = {x, y}
+		-- Never store our own fields on Blizzard's edit boxes.
+		state.mouseDown[self] = {x, y}
 	end)
 	box:HookScript("OnMouseUp", function(self, mouse)
 		if mouse ~= "LeftButton" and mouse ~= "RightButton" then return end
 		local x, y = GetCursorPosition()
-		local down = self.mfMouseDown
-		self.mfMouseDown = nil
+		local down = state.mouseDown[self]
+		state.mouseDown[self] = nil
 		-- Dragging to select text should retain the normal edit-box behavior.
 		if down and (math.abs(x - down[1]) > 3 or math.abs(y - down[2]) > 3) then
 			ns.DismissPanel(); return
@@ -245,6 +258,8 @@ local function wireBox(box)
 		state.clickBox, state.clickButton, state.clickAt = self, mouse, GetTime() + 0.01
 		state.pendingAt = nil
 	end)
+	box:HookScript("OnCursorChanged", function(self) UI:RefreshOverlay(self) end)
+	box:HookScript("OnSizeChanged", function(self) UI:RefreshOverlay(self) end)
 	box:HookScript("OnAttributeChanged", function(self, attribute)
 		if attribute == "chatType" and self:IsShown() then
 			ns.Autofill:Cancel()
@@ -260,8 +275,20 @@ local function wireAllBoxes()
 end
 
 
+-- Close our popups (and strip colored text) as soon as chat locks down, so
+-- nothing Korrect wrote is still in the input when the player presses Enter.
+function Chat:RefreshGuard()
+	local locked = ns.Compat:ChatLocked()
+	if locked == state.locked then return end
+	state.locked = locked
+	ns.DismissPanel()
+	UI:ClearMarks()
+	if self:IsOpen() then state.pendingAt = GetTime(); ns.WakeChat() end
+end
+
 function Chat:Update()
 	if not ns.db then return end
+	self:RefreshGuard()
 	ns.Autofill:Update()
 	if state.clickAt and GetTime() >= state.clickAt then
 		local box, mouse = state.clickBox, state.clickButton
@@ -325,6 +352,7 @@ function Chat:HasWork()
 end
 
 function Chat:Initialize()
+	state.locked = ns.Compat:ChatLocked()
 	wireAllBoxes()
 	ns.Compat:HookChat(wireBox, wireAllBoxes)
 end
@@ -340,11 +368,15 @@ function Chat:HandleEvent(event)
 		ns.DismissPanel()
 	end
 	if event == "ADDON_LOADED" or event == "PLAYER_LOGIN" or event == "UPDATE_CHAT_WINDOWS" then wireAllBoxes() end
+	if event == "PLAYER_ENTERING_WORLD" or event == "ENCOUNTER_START" or event == "ENCOUNTER_END"
+		or event == "CHALLENGE_MODE_START" or event == "PLAYER_REGEN_DISABLED" then self:RefreshGuard() end
 	if self:IsOpen() and (event == "GROUP_ROSTER_UPDATE" or event == "PLAYER_TARGET_CHANGED") then rememberNames() end
 end
 
 function Chat:PrintDebug()
 	ns.PrintMessage(ns.Compat:Describe())
+	ns.PrintMessage("Chat lockdown: supported=" .. tostring(ns.Compat.hasChatLockdown)
+		.. ", locked=" .. tostring(ns.Compat:ChatLocked()) .. ", overlay marks=" .. tostring(ns.Compat.overlayMarks))
 	local hooked = 0
 	for _ in pairs(state.hooked) do hooked = hooked + 1 end
 	local marker = state.box and UI.markers[state.box]

@@ -9,7 +9,8 @@ end
 
 function A:Schedule(box)
 	self:Cancel()
-	if not ns.db.autofill or not ns.db.enabled or not box:IsShown() or not ns.Chat:ChannelEnabled(box) then return end
+	if not ns.db.autofill or not ns.db.enabled or not box:IsShown() or not ns.Chat:ChannelEnabled(box)
+		or ns.Compat:ChatLocked() then return end
 	self.box = box
 	self.snapshot, self.cursor = UI:RawText(box)
 	self.pending = GetTime() + 0.3
@@ -50,7 +51,7 @@ function A:Update()
 end
 
 function A:Apply(word)
-	if not self:Current() or not self.token then self:Cancel(); return end
+	if not self:Current() or not self.token or ns.Compat:ChatLocked() then self:Cancel(); return end
 	local box = self.box
 	local text, cursor = E.Replace(self.snapshot, self.token, word, self.cursor)
 	local maxBytes = box.GetMaxBytes and box:GetMaxBytes() or 0

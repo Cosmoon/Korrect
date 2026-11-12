@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.0.5 — 2026-11-12
+
+- Fixed chat messages being blocked ("Korrect has been blocked from an action only available to the Blizzard UI") during boss encounters, Mythic+ runs and rated PvP in Midnight.
+- Retail: misspellings are now underlined in your highlight color instead of coloring the text itself. Korrect never writes to the chat input to show them, so they stay visible everywhere, including during encounters.
+- During chat lockdown Korrect does not change your text: applying a correction and word completion wait until the encounter ends. You can still open the suggestions.
+- Classic clients keep the colored text as before.
+- `/korrect debug` now shows the chat lockdown state.
+
 ## 1.0.4 — 2026-11-04
 
 - Language dictionaries are now separate addons (Korrect - Deutsch, Français, Español, Italiano, Nederlands, English (UK)) that load only when enabled. Korrect uses far less memory and loads faster at login.

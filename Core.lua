@@ -39,3 +39,8 @@ end)
 for _, event in ipairs({"ADDON_LOADED", "PLAYER_LOGIN", "UPDATE_CHAT_WINDOWS"}) do
 	driver:RegisterEvent(event)
 end
+-- Chat-lockdown transitions. Events a client does not know are skipped.
+for _, event in ipairs({"PLAYER_ENTERING_WORLD", "ENCOUNTER_START", "ENCOUNTER_END",
+	"CHALLENGE_MODE_START", "PLAYER_REGEN_DISABLED"}) do
+	pcall(driver.RegisterEvent, driver, event)
+end

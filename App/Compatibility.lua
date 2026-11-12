@@ -39,10 +39,17 @@ function API.PrepareChatBox(box)
 	return true
 end
 
-function Compat:CanHighlight(box)
+-- Whether this input should show spelling marks at all (user/addon options).
+function Compat:WantsMarks(box)
 	if messengerInputs[box] then return ns.db and ns.db.whisperMessengerHighlights == true end
 	local options = chatBoxes[box]
 	return not options or options.highlights
+end
+
+-- Whether marks may be written into the input as color codes. Retail draws
+-- them as an overlay instead (see overlayMarks below).
+function Compat:CanHighlight(box)
+	return not self.overlayMarks and self:WantsMarks(box)
 end
 
 local version, build, _, interface
@@ -69,6 +76,31 @@ local vocabularyByClient = {
 	["Mists of Pandaria Classic"] = "MoPClassic",
 }
 Compat.vocabulary = vocabularyByClient[Compat.client] or "Retail"
+
+-- Midnight chat lockdown (active boss encounter, Mythic+ run, rated PvP).
+-- Blizzard then sends chat only from an untainted execution: any addon
+-- SetText on the input (colors, corrections, completions) makes its own
+-- Enter handler fail with ADDON_ACTION_BLOCKED. Korrect never writes to a
+-- chat input while this is active.
+local lockdownAPI = C_ChatInfo and C_ChatInfo.InChatMessagingLockdown
+local getCVarBool = (C_CVar and C_CVar.GetCVarBool) or GetCVarBool
+Compat.hasChatLockdown = type(lockdownAPI) == "function"
+
+function Compat:ChatLocked()
+	if not self.hasChatLockdown then return false end
+	if lockdownAPI() then return true end
+	-- Blizzard's test switch: /console addonChatRestrictionsForced 1
+	if getCVarBool then
+		local ok, forced = pcall(getCVarBool, "addonChatRestrictionsForced")
+		if ok and forced then return true end
+	end
+	return false
+end
+
+-- Retail draws spelling marks as underlines over the input and never writes
+-- color codes into it, so marks stay visible everywhere, even during lockdown.
+-- Other clients have no lockdown and keep the native colored text.
+Compat.overlayMarks = Compat.client == "Retail"
 
 local wimChannels = {
 	guild = "GUILD", officer = "OFFICER", party = "PARTY", raid = "RAID",

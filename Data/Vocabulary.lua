@@ -3,6 +3,10 @@ local _, ns = ...
 -- Handwritten vocabulary and ranking hints. These are not dictionary imports.
 -- Shared chat jargon only. Places, NPCs, items and spells come from client layers.
 ns.WowWords = [[
+misclick misclicks misclicked misclicking keybinds hotkeyed macroed laggy lagspike lagspikes dced
+relog relogs relogged relogging respawned despawn despawns despawned overpull overpulls overpulled overpulling
+nerfed nerfs rng lootable undergeared overgeared reroll rerolls rerolled rerolling noob noobs grinded
+queueing requeue requeued afking afked kiter dpsing minmax minmaxing minmaxer oneshot oneshots oneshotted
 warcraft azeroth wow classic forever retail addon addons minimap spellcheck spellchecker spellchecking
 aggro dps aoe dot dots hot hots los gcd cooldown cooldowns buff buffs debuff debuffs
 pvp pve pally pala hearth hearthstone hearthstones hearthing hearthstoning rez rezz res rezzing

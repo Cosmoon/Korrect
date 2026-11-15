@@ -56,6 +56,9 @@ function ns.OptionsChanged()
 	state.pendingAt = Chat:IsOpen() and (GetTime() + 0.05) or nil
 end
 
+function Chat:Ignore(word) state.ignored[word] = true end
+function Chat:IsIgnored(word) return state.ignored[word] == true end
+
 function ns.ClearIgnores()
 	state.ignored = {}
 	ns.OptionsChanged()
@@ -187,6 +190,7 @@ end
 
 function Chat:FinishInput(box)
 	ns.Autofill:Cancel()
+	ns.Autocorrect:Forget(box)
 	if state.box == box then
 		state.job, state.selected, state.pendingAt = nil, nil, nil
 		state.clickBox, state.clickButton, state.clickAt = nil, nil, nil
@@ -210,10 +214,12 @@ local function wireBox(box)
 	end)
 	box:HookScript("OnEnterPressed", finishInput)
 	box:HookScript("OnEscapePressed", function() ns.Autofill:Cancel() end)
-	box:HookScript("OnTextChanged", function(self)
+	box:HookScript("OnTextChanged", function(self, userInput)
 		if UI:IsFormatting(self) or not self:IsShown() then return end
 		ns.WakeChat()
 		UI:ClearMarks(self)
+		UI:TrackCorrections(self)
+		ns.Autocorrect:OnTextChanged(self, userInput)
 		state.box, state.pendingAt, state.force = self, GetTime() + 0.15, false
 		state.job, state.selected = nil, nil
 		UI.panel:Hide()
@@ -226,6 +232,7 @@ local function wireBox(box)
 	end)
 	box:HookScript("OnHide", function(self)
 		if ns.Autofill.box == self then ns.Autofill:Cancel() end
+		ns.Autocorrect:Forget(self)
 		if state.box == self then
 			state.job, state.selected, state.pendingAt, state.force = nil, nil, nil, false
 			state.clickBox, state.clickButton, state.clickAt = nil, nil, nil
@@ -258,8 +265,8 @@ local function wireBox(box)
 		state.clickBox, state.clickButton, state.clickAt = self, mouse, GetTime() + 0.01
 		state.pendingAt = nil
 	end)
-	box:HookScript("OnCursorChanged", function(self) UI:RefreshOverlay(self) end)
-	box:HookScript("OnSizeChanged", function(self) UI:RefreshOverlay(self) end)
+	box:HookScript("OnCursorChanged", function(self) UI:RefreshOverlay(self); UI:RefreshCorrections(self) end)
+	box:HookScript("OnSizeChanged", function(self) UI:RefreshOverlay(self); UI:RefreshCorrections(self) end)
 	box:HookScript("OnAttributeChanged", function(self, attribute)
 		if attribute == "chatType" and self:IsShown() then
 			ns.Autofill:Cancel()
@@ -289,6 +296,7 @@ end
 function Chat:Update()
 	if not ns.db then return end
 	self:RefreshGuard()
+	ns.Autocorrect:Update()
 	ns.Autofill:Update()
 	if state.clickAt and GetTime() >= state.clickAt then
 		local box, mouse = state.clickBox, state.clickButton
@@ -341,7 +349,7 @@ function Chat:Update()
 end
 
 function Chat:HasWork()
-	if ns.Autofill.pending or ns.Autofill.job then return true end
+	if ns.Autofill.pending or ns.Autofill.job or ns.Autocorrect:HasWork() then return true end
 	if state.pendingAt or state.clickAt or state.job then return true end
 	if state.box and state.box:IsShown() and ns.db.enabled and channelEnabled(state.box) and not state.selected then
 		for _, issue in ipairs(state.issues or {}) do

@@ -32,7 +32,10 @@ driver:SetScript("OnEvent", function(_, event, name)
 		ns.RegisterCommands()
 	elseif ns.db then
 		ns.Chat:HandleEvent(event)
-		if event == "PLAYER_LOGIN" then driver:UnregisterEvent(event) end
+		if event == "PLAYER_LOGIN" then
+			driver:UnregisterEvent(event)
+			ns.RemindIfPaused()
+		end
 	end
 end)
 

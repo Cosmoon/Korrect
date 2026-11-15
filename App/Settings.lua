@@ -6,6 +6,8 @@ local defaults = {
 	whisperMessengerHighlights = true,
 	showMinimap = true, minimapAngle = 220, maxSuggestions = 6, panelScale = 1,
 	autofill = true, rememberNames = true, replacements = {},
+	autocorrect = true, autocorrectReplacements = true,
+	autocorrectSwaps = true, autocorrectMissing = true, autocorrectKeys = true,
 	languages = { enUS = true, enGB = false, deDE = false, frFR = false, esES = false, itIT = false, nlNL = false, nlBE = false },
 	minLength = 2, highlightColor = { 1, 0.42, 0.34 }, personalWords = {},
 	channels = { SAY = true, YELL = true, WHISPER = true, GUILD = true,
@@ -27,9 +29,20 @@ local function restoreDefaults(db, model)
 	end
 end
 
+local PAUSED_HINT = "Right-click the minimap button or type /korrect on to resume."
+
 function ns.SetOption(key, value)
+	local changed = ns.db[key] ~= value
 	ns.db[key] = value
 	ns.OptionsChanged()
+	-- Pausing hides every highlight, so always say so in chat.
+	if key == "enabled" and changed then
+		ns.PrintMessage(value and "Spelling checks enabled." or ("Spelling checks paused. " .. PAUSED_HINT))
+	end
+end
+
+function ns.RemindIfPaused()
+	if ns.db and not ns.db.enabled then ns.PrintMessage("Spelling checks are paused. " .. PAUSED_HINT) end
 end
 
 local function missingLanguage(code)
@@ -123,7 +136,7 @@ function ns.InitializeSettings()
 			ns.db.replacements[trigger] = nil
 		else count = count + 1 end
 	end
-	ns.db.autoPanel, ns.db.showUnderlines = nil, nil -- Retire popup/underline settings.
+	ns.db.autoPanel, ns.db.showUnderlines, ns.db.autocorrectUnderline = nil, nil, nil -- Retired settings.
 	ns.db.maxSuggestions = math.floor(math.max(2, math.min(8, ns.db.maxSuggestions)))
 	ns.db.panelScale = math.max(0.8, math.min(1.4, ns.db.panelScale))
 	ns.db.minLength = math.max(2, math.min(5, ns.db.minLength))

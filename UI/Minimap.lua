@@ -5,6 +5,9 @@ local BORDER_OFFSET = 7 -- Place the icon's inner edge near the minimap border.
 
 function UI:UpdateMinimap()
 	if not self.minimap then return end
+	-- A grey icon shows at a glance that spelling checks are paused.
+	self.minimap.icon:SetDesaturated(not ns.db.enabled)
+	self.minimap.icon:SetAlpha(ns.db.enabled and 1 or 0.6)
 	local angle = math.rad(ns.db.minimapAngle)
 	local halfWidth, halfHeight = Minimap:GetWidth() / 2, Minimap:GetHeight() / 2
 	local x, y = math.cos(angle), math.sin(angle)
@@ -43,6 +46,7 @@ function UI:CreateMinimap()
 	b:RegisterForClicks("LeftButtonUp", "RightButtonUp"); b:RegisterForDrag("LeftButton")
 	local icon = b:CreateTexture(nil, "ARTWORK")
 	icon:SetTexture(ICON); icon:SetSize(22, 22); icon:SetPoint("CENTER")
+	b.icon = icon
 	local border = b:CreateTexture(nil, "OVERLAY")
 	border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
 	border:SetSize(54, 54); border:SetPoint("TOPLEFT")

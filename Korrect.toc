@@ -2,7 +2,7 @@
 ## Title: Korrect
 ## Notes: Local chat spelling checks, useful corrections, and a personal dictionary.
 ## Author: Cosmoon
-## Version: 1.0.5
+## Version: 1.0.6
 ## IconTexture: Interface\AddOns\Korrect\Assets\KorrectLogo.tga
 ## SavedVariables: KorrectDB
 
@@ -32,6 +32,7 @@ UI\Highlights.lua
 App\Settings.lua
 App\Session.lua
 App\Autofill.lua
+App\Autocorrect.lua
 App\Chat.lua
 App\Commands.lua
 Core.lua

@@ -1,5 +1,7 @@
-local _, ns = ...
+local ADDON, ns = ...
 local UI = ns.UI
+local getMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
+local VERSION = getMetadata and getMetadata(ADDON, "Version") or ""
 local label, background, button = UI.Label, UI.Background, UI.Button
 local tip, checkbox, editbox = UI.Tooltip, UI.Checkbox, UI.EditBox
 local ICON = UI.ICON
@@ -12,7 +14,7 @@ local function buildOptions(parent)
 	label(parent, "Korrect", 72, -15, "GameFontNormalLarge")
 	label(parent, "Your words. A little more confidence.", 72, -39, "GameFontHighlightSmall")
 	local pages, tabs = {}, {}
-	for i, name in ipairs({ "General", "Chat channels", "Personal words", "Languages", "Typing", "Replacements" }) do
+	for i, name in ipairs({ "General", "Chat channels", "Personal words", "Languages", "Typing", "Autocorrect" }) do
 		local page = CreateFrame("Frame", nil, parent)
 		page:SetPoint("TOPLEFT", 0, -134); page:SetPoint("BOTTOMRIGHT", 0, 0)
 		page:Hide(); pages[i] = page
@@ -32,7 +34,7 @@ local function buildOptions(parent)
 			function() return ns.db[key] end,
 			function(value) ns.SetOption(key, value) end))
 	end
-	option(general, "enabled", "Enable spelling checks", "Checks outgoing chat as you type. Corrections are applied only when you choose one.", 16, -25)
+	option(general, "enabled", "Enable spelling checks", "Checks outgoing chat as you type. Corrections are applied only when you choose one, unless you turn on Autocorrect.", 16, -25)
 	option(general, "showHighlights", "Color possible spelling mistakes", "Colors completed words in the chat box. Uses a contrasting color when needed. Click a colored word for corrections. Word completion is configured in Typing.", 16, -55)
 	option(general, "wowVocabulary", "Recognize WoW terms and chat shorthand", "Accepts common spells, places, classes, and terms such as LFG, aggro, and hearthstone.", 16, -85)
 	option(general, "ignoreUppercase", "Ignore words written in ALL CAPS", "Useful for abbreviations. Disable this if you want uppercase misspellings checked too.", 16, -115)
@@ -165,17 +167,24 @@ local function buildOptions(parent)
 	option(typing, "whisperMessengerHighlights", "Color spelling mistakes in WhisperMessenger", "Enabled by default. Also requires Color possible spelling mistakes in General. WhisperMessenger may retain these colors in saved drafts. Disable this to keep its input plain while keeping corrections and word completion.", 16, -345)
 
 	local replacements = pages[6]
-	label(replacements, "PERSONAL REPLACEMENTS", 20, -2, "GameFontNormal")
-	local replacementHelp = label(replacements, "One shortcut = replacement per line, for example: invv = invite\nChoices appear in completion and spelling suggestions.\nNothing is replaced automatically. Save an empty list to clear it.", 20, -30, "GameFontHighlightSmall")
+	label(replacements, "AUTOCORRECT", 20, -2, "GameFontNormal")
+	local undoTip = " Press Backspace right after a fix to undo it; that word is then ignored this session."
+	option(replacements, "autocorrect", "Fix common English typos", "A short curated list such as teh, recieve and seperate." .. undoTip, 16, -25)
+	option(replacements, "autocorrectSwaps", "Fix swapped letters", "tetsing becomes testing. Only when exactly one swap gives a known word." .. undoTip, 16, -53)
+	option(replacements, "autocorrectMissing", "Fix a missing or doubled letter", "forver becomes forever, untill becomes until. Only when exactly one word fits and no swap gives a word too." .. undoTip, 16, -81)
+	option(replacements, "autocorrectKeys", "Fix letters hit with a neighbouring key", "hwlp becomes help. One wrong key, or two in words of six letters or more, using a QWERTY layout. Only when exactly one word fits." .. undoTip, 16, -109)
+	option(replacements, "autocorrectReplacements", "Expand my replacements as I type", "Applies the replacements below automatically." .. undoTip, 16, -137)
+	label(replacements, "PERSONAL REPLACEMENTS", 20, -210, "GameFontNormal")
+	local replacementHelp = label(replacements, "One per line, for example: omw = on my way. Save an empty list to clear it.", 20, -230, "GameFontHighlightSmall")
 	replacementHelp:SetWidth(470)
 	local replacementScroll = CreateFrame("ScrollFrame", nil, replacements, "UIPanelScrollFrameTemplate")
-	replacementScroll:SetPoint("TOPLEFT", 22, -88); replacementScroll:SetSize(439, 230)
-	local replacementWords = editbox(replacementScroll, 430, 230, true)
+	replacementScroll:SetPoint("TOPLEFT", 22, -250); replacementScroll:SetSize(439, 80)
+	local replacementWords = editbox(replacementScroll, 430, 80, true)
 	replacementWords:SetMaxLetters(24000); replacementScroll:SetScrollChild(replacementWords)
 	replacementWords:SetScript("OnTextChanged", function(self)
 		local lines = 1
 		for line in (self:GetText() .. "\n"):gmatch("(.-)\n") do lines = lines + math.max(1, math.ceil(#line/48)) end
-		self:SetHeight(math.max(230, lines*18+20)); replacementScroll:UpdateScrollChildRect()
+		self:SetHeight(math.max(80, lines*18+20)); replacementScroll:UpdateScrollChildRect()
 	end)
 	replacementWords:SetScript("OnCursorChanged", function(_, _, y, _, height)
 		local current = replacementScroll:GetVerticalScroll()
@@ -183,17 +192,17 @@ local function buildOptions(parent)
 		elseif -y+height > current+replacementScroll:GetHeight() then
 			replacementScroll:SetVerticalScroll(math.min(replacementScroll:GetVerticalScrollRange(), -y+height-replacementScroll:GetHeight())) end
 	end)
-	local replacementNote = label(replacements, "", 20, -365, "GameFontHighlightSmall")
+	local replacementNote = label(replacements, "", 20, -372, "GameFontHighlightSmall")
 	replacementNote:SetWidth(470)
 	local saveReplacements = button(replacements, "Save replacements", 170, 26, function()
 		local saved, err = ns.SaveReplacements(replacementWords:GetText())
 		replacementNote:SetText(err or ("Saved " .. saved .. " replacements.")); replacementWords:ClearFocus()
 	end)
-	saveReplacements:SetPoint("TOPLEFT", 20, -330)
+	saveReplacements:SetPoint("TOPLEFT", 20, -340)
 	local reset = button(parent, "Reset options", 125, 24, function() ns.ResetOptions() end)
 	reset:SetPoint("BOTTOMLEFT", 20, 18)
 	tip(reset, "Reset options", "Restores display and channel settings. Keeps your personal dictionary and replacements.")
-	local footer = label(parent, "1.0.3 - chat addon support", 175, -563, "GameFontDisableSmall")
+	local footer = label(parent, VERSION ~= "" and ("Version " .. VERSION) or "", 175, -563, "GameFontDisableSmall")
 	parent.Refresh = function(self)
 		for _, control in ipairs(self.controls) do control:Refresh() end
 		local list = {}

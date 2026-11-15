@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.0.6 — 2026-11-15
+
+- New Autocorrect tab (the former Replacements tab). Korrect now fixes typos as you type: well-known English typos such as teh and recieve, and your personal replacements, when you finish the word. Autocorrect is on by default; each rule can be switched off on this tab.
+- Autocorrect also fixes fast-typing slips: swapped letters (tetsing → testing), a missing or doubled letter (forver → forever, untill → until), and letters hit with a neighbouring key (hwlp → help; two wrong keys in longer words). A word is changed only when exactly one fix fits, or when only one of the possible fixes is a common chat word.
+- Press Backspace right after an automatic fix to restore your word; it is then ignored for the session.
+- Words fixed automatically briefly light up so you notice the change. The flash never changes your text, so it also works during encounters.
+- Autocorrect never changes dictionary words, WoW terms or remembered names, and does nothing while chat is locked.
+- Added about 50 common gaming words to the chat vocabulary, such as misclick, keybinds, laggy, relog, despawn, overpull, nerfed, noob, reroll and oneshot.
+- Pausing spelling checks is now visible: a chat message when they are paused or resumed (minimap right-click, /korrect off or the settings), a grey minimap icon while paused, and a reminder at login.
+- Retail: possible spelling mistakes are much easier to see. Besides the underline, each word now gets a tinted box in your highlight color, like a highlighter pen. It is still drawn over the chat box, so messages are never blocked during encounters.
+- Fixed garbled characters in `/korrect help`.
+- The settings footer now shows the installed version.
+
 ## 1.0.5 — 2026-11-12
 
 - Fixed chat messages being blocked ("Korrect has been blocked from an action only available to the Blizzard UI") during boss encounters, Mythic+ runs and rated PvP in Midnight.

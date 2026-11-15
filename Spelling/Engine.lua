@@ -157,6 +157,7 @@ local keyboard = {
 	k = "jiolm", l = "kop", z = "asx", x = "zsdc", c = "xdfv",
 	v = "cfgb", b = "vghn", n = "bhjm", m = "njk",
 }
+Engine.Keyboard = keyboard
 
 function Engine:Suggest(word, options, yieldWork)
 	word = normalize(word)

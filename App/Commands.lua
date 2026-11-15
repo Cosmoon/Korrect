@@ -11,8 +11,9 @@ function ns.RegisterCommands()
 		local command, argument = message:match("^%s*(%S*)%s*(.-)%s*$")
 		command = command:lower()
 		if command == "on" or command == "off" then
-			ns.SetOption("enabled", command == "on")
-			ns.PrintMessage(command == "on" and "Spelling checks enabled." or "Spelling checks paused.")
+			if ns.db.enabled == (command == "on") then
+				ns.PrintMessage(command == "on" and "Spelling checks are already enabled." or "Spelling checks are already paused.")
+			else ns.SetOption("enabled", command == "on") end
 		elseif command == "minimap" then
 			ns.SetOption("showMinimap", not ns.db.showMinimap)
 			ns.PrintMessage(ns.db.showMinimap and "Minimap button shown." or "Minimap button hidden. Use /korrect for settings.")
@@ -24,7 +25,7 @@ function ns.RegisterCommands()
 				ns.db.personalWords[word] = true; ns.OptionsChanged(); ns.PrintMessage("Learned " .. word .. ".")
 			else ns.PrintMessage("Use /korrect add <word> (2-28 Latin letters; accents allowed), or edit your personal list in /korrect.") end
 		elseif command == "help" then
-			ns.PrintMessage("/korrect settings â€¢ /korrect on|off â€¢ /korrect minimap â€¢ /korrect add <word>. Click an colored word for corrections.")
+			ns.PrintMessage("/korrect settings · /korrect on|off · /korrect minimap · /korrect add <word>. Click a colored word for corrections.")
 		elseif command == "debug" then
 			ns.Chat:PrintDebug()
 		else ns.OpenSettings() end

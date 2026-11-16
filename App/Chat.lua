@@ -145,8 +145,8 @@ local function check(box, force)
 	if not box or not box:IsShown() or not ns.db.enabled or not channelEnabled(box) then
 		UI.panel:Hide(); UI:ClearMarks(box); return
 	end
-	-- Colored-text clients must not write to the input during lockdown.
-	-- Retail overlays never touch the input and keep checking.
+	-- Checks pause during chat lockdown: colored text means writing to the
+	-- input, which would get the player's message blocked.
 	if ns.Compat:ChatLocked() and not ns.Compat.overlayMarks then
 		state.box, state.snapshot, state.issues = box, UI:RawText(box), {}
 		UI.panel:Hide(); UI:ClearMarks(box); return
@@ -288,6 +288,15 @@ function Chat:RefreshGuard()
 	local locked = ns.Compat:ChatLocked()
 	if locked == state.locked then return end
 	state.locked = locked
+	-- Lockdown started while colored words are in an open input. They can't be
+	-- removed now without getting the message blocked, so say what to do.
+	if locked and self:IsOpen() then
+		local marker = UI.markers[state.box]
+		if marker and marker.issues and #marker.issues > 0 then
+			ns.PrintMessage("Chat is locked for this encounter, so spelling checks are paused. "
+				.. "If your current message doesn't send, clear it and type it again.")
+		end
+	end
 	ns.DismissPanel()
 	UI:ClearMarks()
 	if self:IsOpen() then state.pendingAt = GetTime(); ns.WakeChat() end
@@ -392,6 +401,7 @@ function Chat:PrintDebug()
 		.. ", colors=" .. tostring(ns.db.showHighlights) .. ", chat boxes=" .. hooked
 		.. ", issues=" .. (marker and #marker.issues or 0)
 		.. ", visible marks=" .. (marker and #marker.ranges or 0)
-		.. "; misspeld/froever recognized=" .. tostring(Engine:Contains("misspeld", ns.db.wowVocabulary))
-		.. "/" .. tostring(Engine:Contains("froever", ns.db.wowVocabulary)))
+		.. "; self-test (test typos flagged): misspeld=" .. tostring(not Engine:Contains("misspeld", ns.db.wowVocabulary))
+		.. ", froever=" .. tostring(not Engine:Contains("froever", ns.db.wowVocabulary)))
+	ns.PrintMessage("Word completion: on=" .. tostring(ns.db.autofill) .. ", last attempt: " .. tostring(ns.Autofill.status))
 end

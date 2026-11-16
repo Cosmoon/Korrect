@@ -8,9 +8,11 @@ Possible spelling mistakes appear in a different color. Click a marked word to s
 
 Korrect preserves item links and removes its highlight formatting before your message is sent.
 
+**During boss encounters, Mythic+ runs and rated PvP (Retail):** Blizzard locks chat for addons, so Korrect pauses spelling checks, corrections, autocorrect and word completion until the encounter ends. Your messages are never blocked by Korrect. If a pull starts while you're halfway through a message with marked words and it doesn't send, clear it and type it again.
+
 ## Complete words while typing
 
-After three letters and a short pause, Korrect offers up to three word completions. Click a suggestion to finish the current word.
+After three letters and a short pause, Korrect offers up to three word completions. The list stays open and narrows as you keep typing. A single typo, such as swapped letters (`tets`), still finds the word you meant. Click a suggestion to finish the current word.
 
 Suggestions use your selected languages, WoW vocabulary, personal dictionary, and recognized names.
 

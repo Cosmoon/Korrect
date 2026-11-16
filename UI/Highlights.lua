@@ -19,6 +19,9 @@ end
 
 local function setDisplay(box, marker, text, cursor)
 	if box:GetText() == text then return end
+	-- Never write to a chat input during lockdown: Blizzard would then block
+	-- the player's message. Colors already in the text are left as they are.
+	if ns.Compat:ChatLocked() then return end
 	marker.expectedText = text
 	marker.updating = true
 	box:SetText(text)
@@ -38,8 +41,12 @@ local measure
 
 local function setMeasureFont(box)
 	if not measure then
+		-- Kept shown but invisible and off-screen: some clients report a width
+		-- of 0 for hidden font strings, which would place every mark at x = 0.
 		measure = UIParent:CreateFontString(nil, "BACKGROUND")
-		measure:Hide()
+		measure:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", -10000, -10000)
+		measure:SetAlpha(0)
+		measure:Show()
 	end
 	local font, size, flags = box:GetFont()
 	if font and not (issecretvalue and issecretvalue(font)) then
@@ -47,12 +54,21 @@ local function setMeasureFont(box)
 	else
 		measure:SetFontObject(box:GetFontObject() or ChatFontNormal)
 	end
-	return size or 14
+	if type(size) ~= "number" or (issecretvalue and issecretvalue(size)) then size = 14 end
+	measureSize = size
+	return size
 end
 
+local measureSize = 14
 local function textWidth(text)
+	if text == "" then return 0 end
 	measure:SetText(text)
-	return measure.GetUnboundedStringWidth and measure:GetUnboundedStringWidth() or measure:GetStringWidth()
+	local width = measure.GetUnboundedStringWidth and measure:GetUnboundedStringWidth() or measure:GetStringWidth()
+	if type(width) ~= "number" or (issecretvalue and issecretvalue(width)) or width <= 0 then
+		-- Rough estimate so marks still appear if the client measures nothing.
+		width = (strlenutf8 and strlenutf8(text) or #text) * measureSize * 0.55
+	end
+	return width
 end
 
 -- A single-line edit box scrolls just enough to keep the caret visible.
@@ -74,11 +90,43 @@ end
 
 function UI:HideOverlay(box)
 	for editBox, overlay in pairs(overlays) do
-		if not box or box == editBox then overlay:Hide() end
+		if not box or box == editBox then overlay.signature = nil; overlay:Hide() end
 	end
 end
 
+-- Anchor a mark frame over the text area. Re-anchoring is skipped when
+-- nothing changed: moving frames anchored to the edit box on every caret
+-- event can make the client lay the box out again, fire OnCursorChanged
+-- again, and restart the caret blink (a fast-blinking caret, no marks).
+local function anchorOver(frame, box, left, right, top, bottom, levelOffset)
+	local key = left .. ":" .. right .. ":" .. top .. ":" .. bottom
+	if frame.anchorKey ~= key or frame.anchorBox ~= box then
+		frame.anchorKey, frame.anchorBox = key, box
+		frame:ClearAllPoints()
+		frame:SetPoint("TOPLEFT", box, "TOPLEFT", left, -top)
+		frame:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -right, bottom)
+	end
+	local strata, level = box:GetFrameStrata(), box:GetFrameLevel() + levelOffset
+	if frame:GetFrameStrata() ~= strata then frame:SetFrameStrata(strata) end
+	if frame:GetFrameLevel() ~= level then frame:SetFrameLevel(level) end
+end
+UI.AnchorOver = anchorOver
+
+local function insets(box)
+	local left, right, top, bottom = box:GetTextInsets()
+	local function number(value)
+		if type(value) ~= "number" or (issecretvalue and issecretvalue(value)) then return 0 end
+		return value
+	end
+	return number(left), number(right), number(top), number(bottom)
+end
+UI.Insets = insets
+
+local drawing = false
 local function drawOverlay(box, marker, color)
+	if drawing then return end
+	drawing = true
+	local ok, err = pcall(function()
 	local overlay = overlays[box]
 	if not overlay then
 		overlay = CreateFrame("Frame", nil, UIParent)
@@ -87,19 +135,20 @@ local function drawOverlay(box, marker, color)
 		overlay.lines, overlay.fills = {}, {}
 		overlays[box] = overlay
 	end
-	local left, right, top, bottom = box:GetTextInsets()
-	left, right, top, bottom = left or 0, right or 0, top or 0, bottom or 0
-	overlay:ClearAllPoints()
-	overlay:SetPoint("TOPLEFT", box, "TOPLEFT", left, -top)
-	overlay:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -right, bottom)
-	overlay:SetFrameStrata(box:GetFrameStrata())
-	overlay:SetFrameLevel(box:GetFrameLevel() + 3)
+	local left, right, top, bottom = insets(box)
+	local raw, cursor = UI:RawText(box)
+	local width, height = box:GetWidth() or 0, box:GetHeight() or 0
+	-- Nothing that affects the marks changed: leave the frame alone.
+	local signature = table.concat({ raw, cursor, width, height, left, right, top, bottom,
+		color[1], color[2], color[3], tostring(marker.issues), box:IsShown() and 1 or 0 }, "\031")
+	if overlay.signature == signature then return end
+	overlay.signature = signature
+	anchorOver(overlay, box, left, right, top, bottom, 3)
 
 	local size = setMeasureFont(box)
-	local raw, cursor = UI:RawText(box)
-	local visible = math.max(0, (box:GetWidth() or 0) - left - right)
+	local visible = math.max(0, width - left - right)
 	local offset = scrollOffset(overlay, textWidth(raw:sub(1, cursor)), textWidth(raw), visible)
-	local height = (box:GetHeight() or size) - top - bottom
+	height = (height > 0 and height or size) - top - bottom
 	-- Chat text is vertically centered; sit the line just under the baseline.
 	local y = math.max(0, (height - size) / 2 - 1)
 	overlay.fills = overlay.fills or {}
@@ -134,6 +183,17 @@ local function drawOverlay(box, marker, color)
 	for i = count + 1, #overlay.lines do overlay.lines[i]:Hide() end
 	for i = count + 1, #overlay.fills do overlay.fills[i]:Hide() end
 	overlay:SetShown(count > 0 and box:IsShown())
+	end)
+	drawing = false
+	if not ok then
+		-- Never let a drawing problem stop checking or the suggestions panel.
+		local overlay = overlays[box]
+		if overlay then overlay.signature = nil; overlay:Hide() end
+		if not UI.overlayErrorShown then
+			UI.overlayErrorShown = true
+			geterrorhandler()("Korrect overlay: " .. tostring(err))
+		end
+	end
 end
 
 local function overlayWanted(box, marker)
@@ -263,13 +323,8 @@ local function drawCorrections(box, data)
 	if #data.ranges == 0 or not box:IsShown() then
 		frame:Hide(); data.fade:Stop(); data.fill:Hide(); return
 	end
-	local left, right, top, bottom = box:GetTextInsets()
-	left, right, top, bottom = left or 0, right or 0, top or 0, bottom or 0
-	frame:ClearAllPoints()
-	frame:SetPoint("TOPLEFT", box, "TOPLEFT", left, -top)
-	frame:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -right, bottom)
-	frame:SetFrameStrata(box:GetFrameStrata())
-	frame:SetFrameLevel(box:GetFrameLevel() + 4)
+	local left, right, top, bottom = insets(box)
+	anchorOver(frame, box, left, right, top, bottom, 4)
 	local size = setMeasureFont(box)
 	local raw, cursor = UI:RawText(box)
 	local visible = math.max(0, (box:GetWidth() or 0) - left - right)

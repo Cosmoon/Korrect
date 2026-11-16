@@ -148,6 +148,12 @@ function AC:Guess(word)
 end
 local lengths = setmetatable({}, { __mode = "k" })
 
+-- Changes are never written from inside OnTextChanged: replacing the text of
+-- the box during its own change event can leave the caret hidden. The hook
+-- only decides; the change is applied on the next frame by AC:Update, and
+-- only if the player has not edited the text before it in the meantime.
+local pending = setmetatable({}, { __mode = "k" })
+
 local function fits(box, text)
 	local maxBytes = box.GetMaxBytes and box:GetMaxBytes() or 0
 	local maxLetters = box.GetMaxLetters and box:GetMaxLetters() or 0
@@ -201,11 +207,7 @@ function AC:Active()
 		or db.autocorrectMissing or db.autocorrectKeys
 end
 
--- Changes are never written from inside OnTextChanged: replacing the text of
--- the box during its own change event can leave the caret hidden. The hook
--- only decides; the change is applied on the next frame by AC:Update, and
--- only if the player has not edited the text before it in the meantime.
-local pending = setmetatable({}, { __mode = "k" })
+-- (pending is declared near the top so AC:Forget can reach it.)
 
 -- Called from the OnTextChanged hook after highlights were cleared.
 function AC:OnTextChanged(box, userInput)

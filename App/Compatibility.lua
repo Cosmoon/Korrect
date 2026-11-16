@@ -46,8 +46,8 @@ function Compat:WantsMarks(box)
 	return not options or options.highlights
 end
 
--- Whether marks may be written into the input as color codes. Retail draws
--- them as an overlay instead (see overlayMarks below).
+-- Whether marks may be written into the input as color codes. Every client
+-- uses colored text; during chat lockdown checks pause (see Chat.lua).
 function Compat:CanHighlight(box)
 	return not self.overlayMarks and self:WantsMarks(box)
 end
@@ -97,10 +97,10 @@ function Compat:ChatLocked()
 	return false
 end
 
--- Retail draws spelling marks as underlines over the input and never writes
--- color codes into it, so marks stay visible everywhere, even during lockdown.
--- Other clients have no lockdown and keep the native colored text.
-Compat.overlayMarks = Compat.client == "Retail"
+-- The drawn-overlay marks (UI/Highlights.lua) are switched off on every client:
+-- measuring text over Blizzard's input proved unreliable in Retail 12.1. All
+-- clients color the text itself, and Retail pauses checks during chat lockdown.
+Compat.overlayMarks = false
 
 local wimChannels = {
 	guild = "GUILD", officer = "OFFICER", party = "PARTY", raid = "RAID",

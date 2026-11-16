@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.0.7 — 2026-11-16
+
+- Retail: misspelled words are colored again, as before 1.0.5. In 12.1 the drawn underline could fail to appear, leaving no marks, no suggestions on click and a fast-blinking caret.
+- Retail: spelling checks pause during chat lockdown (boss encounters, Mythic+ runs, rated PvP) and resume when it ends. Korrect never writes to the chat input while chat is locked, so your messages are not blocked.
+- If lockdown starts while marked words are in your message, Korrect tells you in chat to retype it if it doesn't send.
+- Word completion now appears while typing in Retail too.
+- Word completion stays open while you keep typing and narrows as the word grows, instead of closing on every letter. It closes when no words match, when you finish the word, or with Escape.
+- Word completion tolerates one typo in what you typed so far: `tets` offers test, testing and tests; `helo` offers help and hello. Exact matches still come first.
+- Fixed an error when sending or closing chat that skipped part of the cleanup.
+- `/korrect debug`: the spelling self-test line is clearer, and it shows why the last word completion did or did not appear.
+
 ## 1.0.6 — 2026-11-15
 
 - New Autocorrect tab (the former Replacements tab). Korrect now fixes typos as you type: well-known English typos such as teh and recieve, and your personal replacements, when you finish the word. Autocorrect is on by default; each rule can be switched off on this tab.

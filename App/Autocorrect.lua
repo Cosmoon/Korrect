@@ -154,6 +154,11 @@ local lengths = setmetatable({}, { __mode = "k" })
 -- only if the player has not edited the text before it in the meantime.
 local pending = setmetatable({}, { __mode = "k" })
 
+-- Words whose automatic fix the player undid with Backspace. They are not
+-- autocorrected again this session but are still marked as misspelled.
+local undone = {}
+function AC:ClearUndone() undone = {} end
+
 local function fits(box, text)
 	local maxBytes = box.GetMaxBytes and box:GetMaxBytes() or 0
 	local maxLetters = box.GetMaxLetters and box:GetMaxLetters() or 0
@@ -176,7 +181,7 @@ function AC:Correction(text, tokens, index)
 	local db = ns.db
 	local token = tokens[index]
 	local word = Engine.Normalize(token.word)
-	if U.Length(word) < 2 or ns.Chat:IsIgnored(word) then return nil end
+	if U.Length(word) < 2 or ns.Chat:IsIgnored(word) or undone[word] then return nil end
 	-- Only plain lowercase or Sentence-case words; mixed case is usually a name.
 	if token.word ~= word and token.word ~= U.Title(word) then return nil end
 	if db.rememberNames ~= false and ns.Session and ns.MatchWowVocabulary
@@ -194,6 +199,14 @@ function AC:Correction(text, tokens, index)
 		end
 		if hint then return hint, word end
 	end
+	-- Missing apostrophe (dont -> don't, im -> I'm): only when exactly one
+	-- contraction fits. With several, or none, fall through to the guesses;
+	-- with several, nothing is changed at all.
+	local contractions = Engine:Apostrophes(word)
+	if #contractions == 1 then
+		if db.autocorrectMissing then return Engine.ApostropheCase(contractions[1]), word end
+		return nil
+	elseif #contractions > 1 then return nil end
 	if db.autocorrectSwaps or db.autocorrectMissing or db.autocorrectKeys then
 		local guess = self:Guess(word)
 		if guess then return guess, word end
@@ -270,7 +283,7 @@ function AC:Update()
 			if job.undo then
 				local record = job.record
 				local restored = record.restored .. tail
-				ns.Chat:Ignore(record.word)
+				undone[record.word] = true
 				if fits(box, restored) then place(box, restored, record.restoredCursor + typed) end
 				UI:TrackCorrections(box)
 			else

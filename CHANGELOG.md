@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.8 — 2026-11-17
+
+- Whisper Messenger: spelling checks, autocorrect and word completion work in its message box again. Since Whisper Messenger 2.1.6 Korrect no longer recognized the box and stayed inactive there without an error.
+- Works with Whisper Messenger 2.1.8, including its new multi-line message box in Retail.
+
 ## 1.0.7 — 2026-11-16
 
 - Retail: misspelled words are colored again, as before 1.0.5. In 12.1 the drawn underline could fail to appear, leaving no marks, no suggestions on click and a fast-blinking caret.
@@ -8,8 +13,10 @@
 - Word completion now appears while typing in Retail too.
 - Word completion stays open while you keep typing and narrows as the word grows, instead of closing on every letter. It closes when no words match, when you finish the word, or with Escape.
 - Word completion tolerates one typo in what you typed so far: `tets` offers test, testing and tests; `helo` offers help and hello. Exact matches still come first.
+- Undoing an autocorrect with Backspace no longer hides the word's mark for the rest of the session. The word just isn't autocorrected again, so it stays colored and you can still pick a correction.
+- Missing apostrophes: `dont`, `youre`, `isnt`, `im` are fixed to don't, you're, isn't and I'm (under "Fix a missing or doubled letter or apostrophe"), suggested first when you click the word, and offered by word completion. This also stops wrong fixes such as wasnt → want. Words that are correct without an apostrophe, such as its, cant and wont, are left alone.
 - Fixed an error when sending or closing chat that skipped part of the cleanup.
-- `/korrect debug`: the spelling self-test line is clearer, and it shows why the last word completion did or did not appear.
+- `/korrect debug`: the spelling self-test line is clearer, it shows why the last word completion did or did not appear, and it lists each word of your last message with why it was or wasn't marked.
 
 ## 1.0.6 — 2026-11-15
 

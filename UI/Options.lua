@@ -171,7 +171,7 @@ local function buildOptions(parent)
 	local undoTip = " Press Backspace right after a fix to undo it; that word is then ignored this session."
 	option(replacements, "autocorrect", "Fix common English typos", "A short curated list such as teh, recieve and seperate." .. undoTip, 16, -25)
 	option(replacements, "autocorrectSwaps", "Fix swapped letters", "tetsing becomes testing. Only when exactly one swap gives a known word." .. undoTip, 16, -53)
-	option(replacements, "autocorrectMissing", "Fix a missing or doubled letter", "forver becomes forever, untill becomes until. Only when exactly one word fits and no swap gives a word too." .. undoTip, 16, -81)
+	option(replacements, "autocorrectMissing", "Fix a missing or doubled letter or apostrophe", "forver becomes forever, untill becomes until, dont becomes don't, im becomes I'm. Only when exactly one word fits and no swap gives a word too. Words that are also correct without an apostrophe, such as its, cant and wont, are left alone." .. undoTip, 16, -81)
 	option(replacements, "autocorrectKeys", "Fix letters hit with a neighbouring key", "hwlp becomes help. One wrong key, or two in words of six letters or more, using a QWERTY layout. Only when exactly one word fits." .. undoTip, 16, -109)
 	option(replacements, "autocorrectReplacements", "Expand my replacements as I type", "Applies the replacements below automatically." .. undoTip, 16, -137)
 	label(replacements, "PERSONAL REPLACEMENTS", 20, -210, "GameFontNormal")

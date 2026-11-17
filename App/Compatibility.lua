@@ -161,12 +161,14 @@ local messengerChannels = {
 }
 
 function Compat:ScanWhisperMessenger(root)
-	-- Inspect only this addon's named window. Its composer is the plain input
-	-- given GetChatType by Composer/LinkHooks.lua; search/note inputs lack it.
+	-- Inspect only this addon's named window. Its composer is the only input
+	-- there that sends on Enter; search/export/dialog inputs lack OnEnterPressed
+	-- or live outside the window. (Since Whisper Messenger 2.1.6 the composer no
+	-- longer carries a GetChatType method, so it can't be used as a marker.)
 	local inputs, lists = {}, {}
 	local function scan(frame)
 		if type(frame.rows) == "table" then lists[#lists + 1] = frame end
-		if frame:GetObjectType() == "EditBox" and type(frame.GetChatType) == "function"
+		if frame:GetObjectType() == "EditBox"
 			and frame:GetScript("OnEnterPressed") and frame:GetScript("OnTextChanged") then
 			inputs[#inputs + 1] = frame
 		end

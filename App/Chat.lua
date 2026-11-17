@@ -61,6 +61,7 @@ function Chat:IsIgnored(word) return state.ignored[word] == true end
 
 function ns.ClearIgnores()
 	state.ignored = {}
+	if ns.Autocorrect.ClearUndone then ns.Autocorrect:ClearUndone() end
 	ns.OptionsChanged()
 end
 
@@ -149,6 +150,9 @@ local function check(box, force)
 	-- input, which would get the player's message blocked.
 	if ns.Compat:ChatLocked() and not ns.Compat.overlayMarks then
 		state.box, state.snapshot, state.issues = box, UI:RawText(box), {}
+		if not state.snapshot:match("^%s*/") and state.snapshot:find("%S") then
+			state.lastCheck = { text = state.snapshot, issues = {}, cursor = 0, force = true, locked = true, colored = false }
+		end
 		UI.panel:Hide(); UI:ClearMarks(box); return
 	end
 	local text = UI:RawText(box)
@@ -161,8 +165,16 @@ local function check(box, force)
 		end
 	end
 	state.box, state.snapshot, state.issues = box, text, issues
+	-- Remember the last real message for /korrect debug (not the command itself).
+	if not text:match("^%s*/") and text:find("%S") then
+		state.lastCheck = { text = text, issues = issues, cursor = cursor, force = force,
+			locked = ns.Compat:ChatLocked() }
+	end
 	UI.panel:Hide()
 	UI:ShowMarks(box, issues)
+	if state.lastCheck and state.lastCheck.text == text then
+		state.lastCheck.colored = box:GetText() ~= text
+	end
 	if previousJob and previousJob.snapshot == text then state.job = previousJob end
 end
 
@@ -404,4 +416,32 @@ function Chat:PrintDebug()
 		.. "; self-test (test typos flagged): misspeld=" .. tostring(not Engine:Contains("misspeld", ns.db.wowVocabulary))
 		.. ", froever=" .. tostring(not Engine:Contains("froever", ns.db.wowVocabulary)))
 	ns.PrintMessage("Word completion: on=" .. tostring(ns.db.autofill) .. ", last attempt: " .. tostring(ns.Autofill.status))
+	local db = ns.db
+	ns.PrintMessage("Autocorrect: typos=" .. tostring(db.autocorrect) .. ", swaps=" .. tostring(db.autocorrectSwaps)
+		.. ", missing=" .. tostring(db.autocorrectMissing) .. ", keys=" .. tostring(db.autocorrectKeys)
+		.. ", replacements=" .. tostring(db.autocorrectReplacements))
+	local last = state.lastCheck
+	if not last then ns.PrintMessage("Last message: none checked yet. Type a message, then run /korrect debug."); return end
+	ns.PrintMessage("Last message: \"" .. last.text .. "\" (" .. #last.issues .. " flagged, colored="
+		.. tostring(last.colored) .. ", locked=" .. tostring(last.locked) .. ")")
+	local tokens = Engine:Tokens(last.text)
+	local wow = db.wowVocabulary and ns.MatchWowVocabulary and ns.MatchWowVocabulary(Engine, last.text, tokens) or {}
+	local names = db.rememberNames ~= false and ns.Session and ns.MatchWowVocabulary(ns.Session, last.text, tokens) or {}
+	local flagged = {}
+	for _, issue in ipairs(last.issues) do flagged[issue.first] = true end
+	for i, token in ipairs(tokens) do
+		local word = Engine.Normalize(token.word)
+		local reason
+		if flagged[token.first] then reason = "FLAGGED"
+		elseif token.last == #last.text and last.cursor >= #last.text and not last.force then reason = "still typing (no space yet)"
+		elseif wow[i] then reason = "WoW term"
+		elseif names[i] then reason = "remembered name"
+		elseif state.ignored[word] then reason = "ignored this session"
+		elseif db.ignoreUppercase and ns.Unicode.IsUpper(token.word) then reason = "ALL CAPS"
+		elseif ns.Unicode.Length(word) < db.minLength then reason = "too short"
+		elseif db.personalWords[word] then reason = "personal dictionary"
+		elseif Engine:Contains(word, db.wowVocabulary) then reason = "dictionary word"
+		else reason = "not flagged (unknown reason)" end
+		ns.PrintMessage("  " .. token.word .. ": " .. reason)
+	end
 end

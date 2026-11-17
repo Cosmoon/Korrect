@@ -150,6 +150,30 @@ function Engine.Distance(source, target, limit)
 	return previous[m] or big
 end
 
+-- Contractions typed without their apostrophe: dont -> don't, im -> I'm.
+-- Returns the dictionary words made by inserting one apostrophe between two
+-- letters, most common first. Only meaningful for unknown words.
+function Engine:Apostrophes(word)
+	if word:find("'", 1, true) or not U.IsWord(word) then return {} end
+	local chars, found = U.Characters(word), {}
+	for i = 1, #chars - 1 do
+		local candidate = table.concat(chars, "", 1, i) .. "'" .. table.concat(chars, "", i + 1)
+		if self.words[candidate] or self.personal[candidate] then found[#found + 1] = candidate end
+	end
+	table.sort(found, function(a, b)
+		local ar, br = self.common[a] or 99999, self.common[b] or 99999
+		if ar ~= br then return ar < br end
+		return a < b
+	end)
+	return found
+end
+
+-- "i'm", "i'll", "i've" are always written with a capital I.
+function Engine.ApostropheCase(word)
+	if word:sub(1, 2) == "i'" then return "I" .. word:sub(2) end
+	return word
+end
+
 local keyboard = {
 	q = "wa", w = "qeas", e = "wrsd", r = "etdf", t = "ryfg", y = "tugh",
 	u = "yihj", i = "uojk", o = "ipkl", p = "ol", a = "qwsz", s = "awedxz",
@@ -252,7 +276,7 @@ function Engine:Suggest(word, options, yieldWork)
 		local custom = options.replacements and options.replacements[normalize((prefix and prefix .. "'" or "") .. word)]
 		if custom then result[1] = custom end
 		for _, candidate in ipairs(candidates) do
-			local value = (prefix and prefix .. "'" or "") .. candidate.word
+			local value = Engine.ApostropheCase((prefix and prefix .. "'" or "") .. candidate.word)
 			if value ~= custom and #result < options.maxSuggestions then result[#result + 1] = value end
 		end
 		return result
@@ -263,6 +287,10 @@ function Engine:Suggest(word, options, yieldWork)
 			if not self:Contains(piece, options.wowVocabulary) then valid = false end
 		end
 		if valid then add(hint, true) end
+	end
+	-- A missing apostrophe is the most likely fix of all: dont -> don't.
+	if not prefix then
+		for _, candidate in ipairs(self:Apostrophes(word)) do add(candidate, true) end
 	end
 	-- A missing space is one edit. Try each Unicode character boundary using
 	-- only words eligible for suggestions in the currently enabled dictionaries.

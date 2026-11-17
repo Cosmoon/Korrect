@@ -60,13 +60,13 @@ On by default. Each rule can be switched off in `/korrect` → **Autocorrect**:
 
 - **Fix common typos as I type**: fixes a short curated list of well-known English typos (`teh`, `recieve`, `seperate`…) when you finish the word with a space or punctuation.
 - **Fix swapped letters**: `tetsing` → `testing`.
-- **Fix a missing or doubled letter**: `forver` → `forever`, `untill` → `until`.
+- **Fix a missing or doubled letter or apostrophe**: `forver` → `forever`, `untill` → `until`, `dont` → `don't`, `im` → `I'm`. Words that are also correct without an apostrophe (`its`, `cant`, `wont`) are left alone.
 - **Fix letters hit with a neighbouring key**: `hwlp` → `help` (QWERTY layout; two wrong keys in words of six letters or more).
 - **Expand my replacements as I type**: applies your personal replacements automatically.
 
 A word is only changed when exactly one fix fits, or when only one of the possible fixes is a common chat word. When it's unclear (`lsot` could be *lost* or *slot*), the word is just highlighted as usual.
 
-Korrect never autocorrects from guesses: words in your dictionaries, WoW terms and remembered names are left alone, and nothing changes while chat is locked during encounters. Autocorrected words flash briefly so you notice the change. Press **Backspace** right after a fix to restore what you typed; that word is then ignored for the rest of the session.
+Korrect never autocorrects from guesses: words in your dictionaries, WoW terms and remembered names are left alone, and nothing changes while chat is locked during encounters. Autocorrected words flash briefly so you notice the change. Press **Backspace** right after a fix to restore what you typed; Korrect won't autocorrect that word again this session, but it stays marked so you can still pick a correction.
 
 ## Make it yours
 

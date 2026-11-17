@@ -20,7 +20,7 @@ function E:Complete(prefix, options, yieldWork)
 		if yieldWork and visited % 100 == 0 then yieldWork() end
 	end
 	-- key is the already-normalized form when the caller has one.
-	local function add(word, priority, exact, key)
+	local function add(word, priority, exact, key, everyday)
 		tick()
 		key = key or self.Normalize(word)
 		if key == prefix or (not exact and key:sub(1, bytes) ~= prefix) or seen[key] then return end
@@ -29,7 +29,9 @@ function E:Complete(prefix, options, yieldWork)
 		-- Dictionary words: a common word with one typo beats a rare exact
 		-- match (helo -> hello before helot). Names, personal words and WoW
 		-- terms (priority 1-3) always stay on top.
-		if priority >= 4 and not rank then priority = priority + 3 end
+		-- Contractions (don't, you're) count as everyday words even when the
+		-- frequency list lacks them.
+		if priority >= 4 and not rank and not everyday then priority = priority + 3 end
 		best[#best + 1] = {word=word, key=key, priority=priority, rank=rank or 99999}
 		table.sort(best, better)
 		best[4] = nil
@@ -76,7 +78,7 @@ function E:Complete(prefix, options, yieldWork)
 		self:FuzzyComplete(prefix, add, yieldWork)
 	end
 	local results = {}
-	for _, item in ipairs(best) do results[#results + 1] = item.word end
+	for _, item in ipairs(best) do results[#results + 1] = E.ApostropheCase(item.word) end
 	return results
 end
 
@@ -104,11 +106,22 @@ end
 --   5 swapped neighbouring letters    tets  -> test
 --   6 a letter from a neighbouring key  tewt -> test
 --   6 a missing letter                  tst.. -> test
+--   5 a missing apostrophe             dont  -> don't
 --   7 one extra letter                  tesst -> test
 -- The last typed letter is never deleted and nothing is inserted after it:
 -- those edits would just complete a shorter or longer prefix.
 local alphabet = {}
-for c in ("abcdefghijklmnopqrstuvwxyz"):gmatch(".") do alphabet[#alphabet + 1] = c end
+-- The apostrophe counts as a missing letter too: dont -> don't.
+for c in ("abcdefghijklmnopqrstuvwxyz'"):gmatch(".") do alphabet[#alphabet + 1] = c end
+
+-- Real contractions, not possessives (don't, you're, it's, but not tet's).
+local shortS = { ["it's"] = true, ["that's"] = true, ["what's"] = true, ["let's"] = true,
+	["he's"] = true, ["she's"] = true, ["there's"] = true, ["here's"] = true, ["who's"] = true,
+	["where's"] = true, ["how's"] = true, ["when's"] = true, ["why's"] = true }
+local function contraction(word)
+	return word:find("n't$") or word:find("'re$") or word:find("'ve$") or word:find("'ll$")
+		or word:find("'m$") or word:find("'d$") or shortS[word] or false
+end
 
 function E:FuzzyComplete(prefix, add, yieldWork)
 	local chars = U.Characters(prefix)
@@ -119,7 +132,10 @@ function E:FuzzyComplete(prefix, add, yieldWork)
 	local function try(candidate, priority)
 		if tried[candidate] then return end
 		tried[candidate] = true
-		eachPrefixed(self, candidate, function(word) add(word, priority, true, word) end)
+		local apostrophe = candidate:find("'", 1, true) and not prefix:find("'", 1, true)
+		eachPrefixed(self, candidate, function(word)
+			add(word, priority, true, word, apostrophe and contraction(word))
+		end)
 		count = count + 1
 		if yieldWork and count % 8 == 0 then yieldWork() end
 	end
@@ -139,9 +155,12 @@ function E:FuzzyComplete(prefix, add, yieldWork)
 		end
 		chars[i] = typed
 	end
-	for i = 1, n - 1 do
+	-- Insert before any typed letter (never after the last one).
+	for i = 1, n do
 		local before, after = table.concat(chars, "", 1, i - 1), table.concat(chars, "", i, n)
-		for _, c in ipairs(alphabet) do try(before .. c .. after, 6) end
+		for _, c in ipairs(alphabet) do
+			if not (c == "'" and i == 1) then try(before .. c .. after, c == "'" and 5 or 6) end
+		end
 	end
 	for i = 1, n - 1 do
 		try(table.concat(chars, "", 1, i - 1) .. table.concat(chars, "", i + 1, n), 7)
